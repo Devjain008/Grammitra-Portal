@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-village-cream text-gray-800 antialiased selection:bg-village-mint selection:text-white;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  /* Reusable Glassmorphism Cards */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl;
+  }
+  
+  .glass-card-dark {
+    @apply bg-village-darkGreen/80 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl text-white;
+  }
+
+  /* Primary Button Styling */
+  .btn-primary {
+    @apply bg-gradient-to-r from-village-emerald to-village-mint text-white font-medium px-5 py-2.5 rounded-xl shadow-md transition-all duration-300 hover:opacity-95 hover:shadow-lg transform active:scale-95;
+  }
+  
+  /* Secondary Button Styling */
+  .btn-secondary {
+    @apply bg-white text-village-emerald font-medium px-5 py-2.5 rounded-xl shadow-sm border border-village-mint/30 transition-all duration-300 hover:bg-village-lightMint/50 transform active:scale-95;
+  }
+}
+
+/* Custom Scrollbar for sidebars and dashboards */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #52B788;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2D6A4F;
+}
