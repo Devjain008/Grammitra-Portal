@@ -29,6 +29,12 @@ export const accessChatRoom = async (req, res) => {
         participants: [userId1, userId2],
         roomType: 'direct'
       });
+    } else {
+      room.deletedBy = room.deletedBy || [];
+      if (room.deletedBy.some(id => id.toString() === userId1.toString())) {
+        room.deletedBy = room.deletedBy.filter(id => id.toString() !== userId1.toString());
+        await room.save();
+      }
     }
 
     await room.populate('participants', 'fullName email mobile village role profileImage bio');
@@ -71,7 +77,8 @@ export const getUserRooms = async (req, res) => {
 
     // Find all chat rooms where the user is a participant
     const rooms = await ChatRoom.find({
-      participants: userId
+      participants: userId,
+      deletedBy: { $ne: userId }
     })
       .populate('participants', 'fullName email mobile village role profileImage bio')
       .sort({ lastMessageAt: -1, updatedAt: -1 });
@@ -645,6 +652,90 @@ export const updateGroupSettings = async (req, res) => {
     }
 
     res.status(200).json(room);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Toggle mute room
+// @route   POST /api/chat/room/:roomId/mute
+// @access  Private
+export const toggleMuteRoom = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const room = await ChatRoom.findById(req.params.roomId);
+    if (!room) {
+      return res.status(404).json({ message: 'Chat room not found.' });
+    }
+
+    room.mutedBy = room.mutedBy || [];
+    const isMuted = room.mutedBy.some(id => id.toString() === userId.toString());
+
+    if (isMuted) {
+      room.mutedBy = room.mutedBy.filter(id => id.toString() !== userId.toString());
+    } else {
+      room.mutedBy.push(userId);
+    }
+
+    await room.save();
+    await room.populate('participants', 'fullName email mobile village role profileImage bio');
+    res.status(200).json(room);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Toggle block room
+// @route   POST /api/chat/room/:roomId/block
+// @access  Private
+export const toggleBlockRoom = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const room = await ChatRoom.findById(req.params.roomId);
+    if (!room) {
+      return res.status(404).json({ message: 'Chat room not found.' });
+    }
+
+    room.blockedBy = room.blockedBy || [];
+    const isBlocked = room.blockedBy.some(id => id.toString() === userId.toString());
+
+    if (isBlocked) {
+      room.blockedBy = room.blockedBy.filter(id => id.toString() !== userId.toString());
+    } else {
+      room.blockedBy.push(userId);
+    }
+
+    await room.save();
+    await room.populate('participants', 'fullName email mobile village role profileImage bio');
+    res.status(200).json(room);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete chat room for user
+// @route   POST /api/chat/room/:roomId/delete-chat
+// @access  Private
+export const deleteChat = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const room = await ChatRoom.findById(req.params.roomId);
+    if (!room) {
+      return res.status(404).json({ message: 'Chat room not found.' });
+    }
+
+    room.deletedBy = room.deletedBy || [];
+    if (!room.deletedBy.some(id => id.toString() === userId.toString())) {
+      room.deletedBy.push(userId);
+    }
+
+    await Message.updateMany(
+      { roomId: room._id, deletedForUsers: { $ne: userId } },
+      { $addToSet: { deletedForUsers: userId } }
+    );
+
+    await room.save();
+    res.status(200).json({ message: 'Chat deleted successfully.', roomId: room._id });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

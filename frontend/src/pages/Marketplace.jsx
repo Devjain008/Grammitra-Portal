@@ -368,30 +368,35 @@ const Marketplace = () => {
         return true;
       })
       .map((p) => ({ ...p, _dist: calculateDistance(p) }));
-    
-    if (sortBy === 'distance') {
-      result.sort((a, b) => a._dist.val - b._dist.val);
-    } else if (sortBy === 'price_low_high') {
-      result.sort((a, b) => {
+    result.sort((a, b) => {
+      const isOwnA = a.businessId?.ownerId?.toString() === user?._id?.toString();
+      const isOwnB = b.businessId?.ownerId?.toString() === user?._id?.toString();
+      if (isOwnA && !isOwnB) return -1;
+      if (!isOwnA && isOwnB) return 1;
+
+      if (sortBy === 'distance') {
+        return a._dist.val - b._dist.val;
+      }
+      if (sortBy === 'price_low_high') {
         const priceA = a.discount > 0 ? Math.round(a.price * (1 - a.discount / 100)) : a.price;
         const priceB = b.discount > 0 ? Math.round(b.price * (1 - b.discount / 100)) : b.price;
         return priceA - priceB;
-      });
-    } else if (sortBy === 'price_high_low') {
-      result.sort((a, b) => {
+      }
+      if (sortBy === 'price_high_low') {
         const priceA = a.discount > 0 ? Math.round(a.price * (1 - a.discount / 100)) : a.price;
         const priceB = b.discount > 0 ? Math.round(b.price * (1 - b.discount / 100)) : b.price;
         return priceB - priceA;
-      });
-    } else if (sortBy === 'popularity') {
-      result.sort((a, b) => {
+      }
+      if (sortBy === 'popularity') {
         const popA = (a.totalSold || 0) * 10 + (a.views || 0);
         const popB = (b.totalSold || 0) * 10 + (b.views || 0);
         return popB - popA;
-      });
-    }
+      }
+      return 0;
+    });
+
     return result;
-  }, [products, searchTerm, selectedCategory, sortBy, verifiedOnly, inStockOnly, priceFilter, calculateDistance, villageParam]);
+  }, [products, searchTerm, selectedCategory, sortBy, verifiedOnly, inStockOnly, priceFilter, calculateDistance, villageParam, user]);
 
   const SkeletonCard = () => (
     <div className="bg-white rounded-2xl overflow-hidden animate-pulse" style={{ border:'1px solid #ecdcc6' }}>
@@ -598,21 +603,23 @@ const Marketplace = () => {
                 )}
               </div>
 
-              <button type="button"
-                onClick={() => setSortBy(prev => prev === 'distance' ? 'default' : 'distance')}
-                className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-bold transition-all active:scale-95 ${
-                  sortBy === 'distance' ? 'bz-near-on' : 'bz-near-off'
-                }`}>
-                <MapPin className="w-4 h-4"
-                  style={{ color: sortBy === 'distance' ? '#fff' : '#2874f0' }} />
-                <AnimatePresence mode="wait">
-                  <motion.span key={`near-${lang}`}
-                    initial={{ opacity:0 }} animate={{ opacity:1 }}
-                    exit={{ opacity:0 }} transition={{ duration:0.13 }}>
-                    {tr.nearestFirst}
-                  </motion.span>
-                </AnimatePresence>
-              </button>
+              {user?.role !== 'admin' && (
+                <button type="button"
+                  onClick={() => setSortBy(prev => prev === 'distance' ? 'default' : 'distance')}
+                  className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-bold transition-all active:scale-95 ${
+                    sortBy === 'distance' ? 'bz-near-on' : 'bz-near-off'
+                  }`}>
+                  <MapPin className="w-4 h-4"
+                    style={{ color: sortBy === 'distance' ? '#fff' : '#2874f0' }} />
+                  <AnimatePresence mode="wait">
+                    <motion.span key={`near-${lang}`}
+                      initial={{ opacity:0 }} animate={{ opacity:1 }}
+                      exit={{ opacity:0 }} transition={{ duration:0.13 }}>
+                      {tr.nearestFirst}
+                    </motion.span>
+                  </AnimatePresence>
+                </button>
+              )}
             </div>
 
             {/* Sort + Category Dropdowns Row */}
@@ -631,7 +638,7 @@ const Marketplace = () => {
                     <option value="popularity">{tr.sortPopularity}</option>
                     <option value="price_low_high">{tr.sortPriceLow}</option>
                     <option value="price_high_low">{tr.sortPriceHigh}</option>
-                    <option value="distance">{tr.sortDistance}</option>
+                    {user?.role !== 'admin' && <option value="distance">{tr.sortDistance}</option>}
                   </select>
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
@@ -913,7 +920,7 @@ const Marketplace = () => {
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5">
-                            {product._dist?.val !== 9999 && (
+                            {user?.role !== 'admin' && product._dist?.val !== 9999 && (
                               <DistanceBadge info={product._dist} tr={tr} />
                             )}
                             {product.businessId?.type && (
@@ -927,21 +934,28 @@ const Marketplace = () => {
                       </div>
 
                       {/* Action buttons */}
+                      {user?.role !== 'admin' && (
                         <div className="flex flex-col gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button type="button"
-                              onClick={() => handleContactSeller(product)}
-                              className="bz-btn-call flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
-                              <Phone className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
-                              {tr.call}
-                            </button>
-                            <button type="button"
-                              onClick={() => handleChatWithSeller(product)}
-                              className="bz-btn-chat flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
-                              <MessageCircle className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
-                              {tr.chat}
-                            </button>
-                          </div>
+                          {product.businessId?.ownerId === user?._id ? (
+                            <div className="w-full flex items-center justify-center py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-400 italic">
+                              {lang === 'hi' ? 'आपका उत्पाद' : 'Your Product'}
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-2">
+                              <button type="button"
+                                onClick={() => handleContactSeller(product)}
+                                className="bz-btn-call flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
+                                <Phone className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
+                                {tr.call}
+                              </button>
+                              <button type="button"
+                                onClick={() => handleChatWithSeller(product)}
+                                className="bz-btn-chat flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
+                                <MessageCircle className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
+                                {tr.chat}
+                              </button>
+                            </div>
+                          )}
                           
                           {(() => {
 
@@ -1010,6 +1024,7 @@ const Marketplace = () => {
                             );
                           })()}
                         </div>
+                      )}
                       </div>
                     </motion.div>
                   );
@@ -1062,8 +1077,8 @@ const Marketplace = () => {
                   {/* Image/Emoji Header */}
                   <div className="relative aspect-video rounded-2xl flex items-center justify-center text-6xl shadow-inner border border-gray-100 overflow-hidden"
                     style={{ background: 'linear-gradient(135deg, #fbf7f0 0%, #f3ede2 100%)' }}>
-                    {product.image ? (
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    {product.images?.[0] ? (
+                      <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                     ) : (
                       <span>{CATEGORY_EMOJI[product.category] || '📦'}</span>
                     )}
@@ -1166,7 +1181,7 @@ const Marketplace = () => {
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {product._dist?.val !== 9999 && (
+                      {user?.role !== 'admin' && product._dist?.val !== 9999 && (
                         <DistanceBadge info={product._dist} tr={tr} />
                       )}
                       {product.businessId?.type && (
@@ -1209,7 +1224,7 @@ const Marketplace = () => {
                     )}
 
                     {/* Review Form */}
-                    {token && product.sellerId !== user?._id && !product.reviews?.some(r => r.userId?.toString() === user?._id?.toString() || r.userId === user?._id) && (
+                    {token && user?.role !== 'admin' && product.sellerId !== user?._id && !product.reviews?.some(r => r.userId?.toString() === user?._id?.toString() || r.userId === user?._id) && (
                       <form onSubmit={(e) => handleAddProductReview(e, product._id)} className="mt-3 pt-3 border-t border-gray-150 text-left space-y-2">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[11px] font-bold text-gray-600 font-sans">{lang === 'hi' ? 'आपकी रेटिंग:' : 'Your Rating:'}</span>
@@ -1248,21 +1263,28 @@ const Marketplace = () => {
                 </div>
 
                 {/* Actions footer block */}
-                <div className="space-y-2 border-t pt-4 mt-auto">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button"
-                      onClick={() => handleContactSeller(product)}
-                      className="bz-btn-call flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
-                      <Phone className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
-                      {tr.call}
-                    </button>
-                    <button type="button"
-                      onClick={() => handleChatWithSeller(product)}
-                      className="bz-btn-chat flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
-                      <MessageCircle className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
-                      {tr.chat}
-                    </button>
-                  </div>
+                {user?.role !== 'admin' && (
+                  <div className="space-y-2 border-t pt-4 mt-auto">
+                  {product.businessId?.ownerId === user?._id ? (
+                    <div className="w-full flex items-center justify-center py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-400 italic">
+                      {lang === 'hi' ? 'आपका उत्पाद' : 'Your Product'}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button"
+                        onClick={() => handleContactSeller(product)}
+                        className="bz-btn-call flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
+                        <Phone className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
+                        {tr.call}
+                      </button>
+                      <button type="button"
+                        onClick={() => handleChatWithSeller(product)}
+                        className="bz-btn-chat flex items-center justify-center gap-1.5 font-bold text-xs py-2.5 rounded-xl">
+                        <MessageCircle className="w-3.5 h-3.5 shrink-0 text-[#2874f0]" />
+                        {tr.chat}
+                      </button>
+                    </div>
+                  )}
 
                   {(() => {
 
@@ -1326,7 +1348,8 @@ const Marketplace = () => {
                       </button>
                     );
                   })()}
-                </div>
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           );

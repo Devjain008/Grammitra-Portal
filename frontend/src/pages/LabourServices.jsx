@@ -17,6 +17,28 @@ const SKILL_OPTIONS = [
   'farmer_labour','tailor','other'
 ];
 
+/* ─── Distance badge ─── */
+const DistanceBadge = ({ info, isEn }) => {
+  if (!info || info.val === 9999) return null;
+  const { val, label, type } = info;
+  let cls = 'bg-blue-50 text-blue-700 border-blue-100';
+  let dot = '🔵';
+  if (type === 'gps') {
+    if (val < 1)        { cls = 'bg-emerald-50 text-emerald-700 border-emerald-100'; dot = '🟢'; }
+    else if (val <= 10) { cls = 'bg-teal-50 text-teal-700 border-teal-100'; dot = '🔵'; }
+    else if (val <= 25) { cls = 'bg-amber-50 text-amber-700 border-amber-100'; dot = '🟡'; }
+    else                { cls = 'bg-rose-50 text-rose-700 border-rose-100'; dot = '🔴'; }
+  } else if (type === 'text') {
+    if (val === 0.1) cls = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    else if (val === 10) cls = 'bg-teal-50 text-teal-700 border-teal-100';
+  }
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${cls}`}>
+      {dot} {label}
+    </span>
+  );
+};
+
 const LabourServices = () => {
   const { t, locale } = useLanguage();
   const isEn = locale === 'en';
@@ -37,6 +59,38 @@ const LabourServices = () => {
   const [selectedRating,       setSelectedRating]       = useState('all');
   const [selectedRateRange,    setSelectedRateRange]    = useState('all');
   const [selectedSort,         setSelectedSort]         = useState('default');
+
+  const [userCoords, setUserCoords] = useState(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => setUserCoords({ lat: coords.latitude, lng: coords.longitude }),
+        () => { if (user?.location?.coordinates?.length === 2) setUserCoords({ lng: user.location.coordinates[0], lat: user.location.coordinates[1] }); }
+      );
+    } else if (user?.location?.coordinates?.length === 2) {
+      setUserCoords({ lng: user.location.coordinates[0], lat: user.location.coordinates[1] });
+    }
+  }, [user]);
+
+  const calculateDistance = (worker) => {
+    const wc = worker.location;
+    if (userCoords && wc?.coordinates?.length === 2) {
+      const [wLng, wLat] = wc.coordinates;
+      const R = 6371, dLat = (wLat - userCoords.lat) * Math.PI / 180, dLon = (wLng - userCoords.lng) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(userCoords.lat*Math.PI/180)*Math.cos(wLat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return { val: d, label: `${d.toFixed(1)} km`, type: 'gps' };
+    }
+    if (user) {
+      const uV = (user.village||'').toLowerCase(), uD = (user.district||'').toLowerCase(), uS = (user.state||'').toLowerCase();
+      const wV = (worker.village||'').toLowerCase(), wD = (worker.district||'').toLowerCase(), wS = (worker.state||'').toLowerCase();
+      if (uV && wV && uV === wV) return { val: 0.1, label: isEn ? 'Same Village' : 'समान गाँव', type: 'text' };
+      if (uD && wD && uD === wD) return { val: 10, label: isEn ? 'Same District' : 'समान जिला', type: 'text' };
+      if (uS && wS && uS === wS) return { val: 100, label: isEn ? 'Same State' : 'समान राज्य', type: 'text' };
+    }
+    return { val: 9999, label: worker.village || (isEn ? 'Nearby' : 'पास में'), type: 'unknown' };
+  };
 
   /* Modal state */
   const [requestModalOpen,   setRequestModalOpen]   = useState(false);
@@ -212,7 +266,16 @@ const LabourServices = () => {
 
         return matchesSearch && matchesSkill && matchesVillage && matchesAvailability && matchesChargeType && matchesRating && matchesRateRange;
       })
+      .map(labour => ({ ...labour, _dist: calculateDistance(labour) }))
       .sort((a, b) => {
+        const isSelfA = (a.userId?._id || a.userId)?.toString() === user?._id?.toString();
+        const isSelfB = (b.userId?._id || b.userId)?.toString() === user?._id?.toString();
+        if (isSelfA && !isSelfB) return -1;
+        if (!isSelfA && isSelfB) return 1;
+
+        if (selectedSort === 'distance') {
+          return (a._dist?.val || 9999) - (b._dist?.val || 9999);
+        }
         if (selectedSort === 'chargeAsc') {
           return (a.serviceCharge || 0) - (b.serviceCharge || 0);
         }
@@ -224,7 +287,7 @@ const LabourServices = () => {
         }
         return 0;
       });
-  }, [labours, searchTerm, selectedSkill, villageParam, selectedAvailability, selectedChargeType, selectedRating, selectedRateRange, selectedSort, t]);
+  }, [labours, searchTerm, selectedSkill, villageParam, selectedAvailability, selectedChargeType, selectedRating, selectedRateRange, selectedSort, t, userCoords, user]);
 
   /* ═══════════════════════════════════════════════════════════════════════ */
   return (
@@ -289,14 +352,30 @@ const LabourServices = () => {
               )}
             </div>
             
+            {/* Nearest First Toggle */}
+            {user?.role !== 'admin' && (
+              <button type="button"
+                onClick={() => setSelectedSort(prev => prev === 'distance' ? 'default' : 'distance')}
+                className={`flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all active:scale-95 border cursor-pointer shrink-0 ${
+                  selectedSort === 'distance'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                    : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                }`}>
+                <MapPin className="w-4 h-4"
+                  style={{ color: selectedSort === 'distance' ? '#fff' : '#059669' }} />
+                <span>{isEn ? 'Nearest First' : 'नज़दीकी पहले'}</span>
+              </button>
+            )}
+
             {/* Sorting Dropdown */}
             <div className="relative min-w-[200px]">
               <select
                 value={selectedSort}
                 onChange={(e) => setSelectedSort(e.target.value)}
-                className="w-full appearance-none pl-4 pr-10 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm text-gray-700 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-455 cursor-pointer"
+                className="w-full appearance-none pl-4 pr-10 py-3 rounded-2xl bg-gray-55 border border-gray-200 text-sm text-gray-700 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-455 cursor-pointer"
               >
                 <option value="default">{isEn ? 'Default' : 'डिफ़ॉल्ट'}</option>
+                {user?.role !== 'admin' && <option value="distance">{isEn ? 'Distance' : 'दूरी'}</option>}
                 <option value="chargeAsc">{isEn ? 'Price: Low to High' : 'मूल्य: कम से अधिक'}</option>
                 <option value="chargeDesc">{isEn ? 'Price: High to Low' : 'मूल्य: अधिक से कम'}</option>
                 <option value="ratingDesc">{isEn ? 'Highest Rated' : 'उच्चतम रेटिंग'}</option>
@@ -517,6 +596,7 @@ const LabourServices = () => {
                           {isEn ? 'WhatsApp' : 'व्हाट्सएप'}
                         </span>
                       )}
+                      {user?.role !== 'admin' && worker._dist && <DistanceBadge info={worker._dist} isEn={isEn} />}
                     </div>
 
                     {/* Rate */}
@@ -535,42 +615,44 @@ const LabourServices = () => {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="mt-auto grid grid-cols-3 gap-2">
-                      {/* Call */}
-                      <a
-                        href={`tel:${worker.contactNumber}`}
-                        className="col-span-1 flex flex-col items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-2xl py-2.5 text-[11px] font-bold transition-all shadow-sm"
-                      >
-                        <Phone className="w-4 h-4" />
-                        {t('labour.call') || (isEn ? 'Call' : 'कॉल')}
-                      </a>
+                    {user?.role !== 'admin' && (
+                      <div className="mt-auto">
+                        {isSelf ? (
+                          <div className="w-full flex items-center justify-center py-3 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-2xl text-xs font-bold italic">
+                            {isEn ? 'Your Profile' : 'आपकी प्रोफ़ाइल'}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            {/* Call */}
+                            <a
+                              href={`tel:${worker.contactNumber}`}
+                              className="col-span-1 flex flex-col items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-2xl py-2.5 text-[11px] font-bold transition-all shadow-sm"
+                            >
+                              <Phone className="w-4 h-4" />
+                              {t('labour.call') || (isEn ? 'Call' : 'कॉल')}
+                            </a>
 
-                      {!isSelf ? (
-                        <>
-                          {/* Chat */}
-                          <button
-                            onClick={() => handleChatWithWorker(workerUserId)}
-                            className="col-span-1 flex flex-col items-center justify-center gap-1 bg-white border border-emerald-200 hover:bg-emerald-50 active:scale-95 text-emerald-700 rounded-2xl py-2.5 text-[11px] font-bold transition-all"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                            {t('labour.message') || (isEn ? 'Chat' : 'चैट')}
-                          </button>
+                            {/* Chat */}
+                            <button
+                              onClick={() => handleChatWithWorker(workerUserId)}
+                              className="col-span-1 flex flex-col items-center justify-center gap-1 bg-white border border-emerald-200 hover:bg-emerald-50 active:scale-95 text-emerald-700 rounded-2xl py-2.5 text-[11px] font-bold transition-all"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                              {t('labour.message') || (isEn ? 'Chat' : 'चैट')}
+                            </button>
 
-                          {/* Request */}
-                          <button
-                            onClick={() => openRequestModal(worker)}
-                            className="col-span-1 flex flex-col items-center justify-center gap-1 bg-gradient-to-b from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 active:scale-95 text-white rounded-2xl py-2.5 text-[11px] font-bold transition-all shadow-sm"
-                          >
-                            <Send className="w-4 h-4" />
-                            {isEn ? 'Hire' : 'बुक'}
-                          </button>
-                        </>
-                      ) : (
-                        <div className="col-span-2 flex items-center justify-center text-xs text-gray-400 italic">
-                          {isEn ? 'Your profile' : 'आपकी प्रोफ़ाइल'}
-                        </div>
-                      )}
-                    </div>
+                            {/* Request */}
+                            <button
+                              onClick={() => openRequestModal(worker)}
+                              className="col-span-1 flex flex-col items-center justify-center gap-1 bg-gradient-to-b from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 active:scale-95 text-white rounded-2xl py-2.5 text-[11px] font-bold transition-all shadow-sm"
+                            >
+                              <Send className="w-4 h-4" />
+                              {isEn ? 'Hire' : 'बुक'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Reviews Section */}

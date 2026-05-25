@@ -7,7 +7,8 @@ import {
   deleteMyLabourProfile,
   requestLabourService,
   updateServiceRequestStatus,
-  addLabourReview
+  addLabourReview,
+  cancelServiceRequest
 } from '../controllers/labourController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -26,6 +27,7 @@ router.put('/requests/:requestId', protect, updateServiceRequestStatus);
 
 // Requester sends service request
 router.post('/:id/request', protect, requestLabourService);
+router.delete('/requests/:id/:requestId/cancel', protect, cancelServiceRequest);
 
 // Add review to a worker profile
 router.post('/:id/review', protect, addLabourReview);

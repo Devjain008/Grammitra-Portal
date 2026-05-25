@@ -20,10 +20,21 @@ export const setupSocket = (io) => {
     socket.on('send_message', async (data) => {
       try {
         const room = await ChatRoom.findById(data.roomId);
-        if (room && room.roomType === 'group' && room.onlyAdminsCanSendMessages) {
-          const isAdmin = room.adminIds && room.adminIds.some(id => id.toString() === data.senderId.toString());
-          if (!isAdmin) {
-            socket.emit('error', { message: 'Only admins can send messages in this group.' });
+        if (room) {
+          if (room.roomType === 'group' && room.onlyAdminsCanSendMessages) {
+            const isAdmin = room.adminIds && room.adminIds.some(id => id.toString() === data.senderId.toString());
+            if (!isAdmin) {
+              socket.emit('error', { message: 'Only admins can send messages in this group.' });
+              return;
+            }
+          }
+          if (room.blockedBy && room.blockedBy.length > 0) {
+            const isSenderBlocker = room.blockedBy.some(id => id.toString() === data.senderId.toString());
+            if (isSenderBlocker) {
+              socket.emit('error', { message: 'You have blocked this contact. Unblock to send a message.' });
+            } else {
+              socket.emit('error', { message: 'You cannot send messages to this user.' });
+            }
             return;
           }
         }
@@ -35,10 +46,11 @@ export const setupSocket = (io) => {
           content: data.content,
         });
 
-        // Update the room's last message and get participants
+        // Update the room's last message, clear deletedBy list, and get participants
         const updatedRoom = await ChatRoom.findByIdAndUpdate(data.roomId, {
           lastMessage: data.content,
-          lastMessageAt: new Date()
+          lastMessageAt: new Date(),
+          $set: { deletedBy: [] }
         }, { new: true });
 
         // Broadcast to everyone in the room INCLUDING the sender so they get the real DB _id

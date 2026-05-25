@@ -265,3 +265,33 @@ export const addLabourReview = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Cancel service request by requester
+// @route   DELETE /api/labour/requests/:id/:requestId/cancel
+// @access  Private
+export const cancelServiceRequest = async (req, res) => {
+  try {
+    const labour = await Labour.findById(req.params.id);
+    if (!labour) {
+      return res.status(404).json({ message: 'Worker profile not found.' });
+    }
+
+    const request = labour.serviceRequests.id(req.params.requestId);
+    if (!request) {
+      return res.status(404).json({ message: 'Service request not found.' });
+    }
+
+    // Verify requester matches logged-in user
+    if (request.requesterId.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized to cancel this request.' });
+    }
+
+    // Remove request from serviceRequests list
+    labour.serviceRequests = labour.serviceRequests.filter(r => r._id.toString() !== req.params.requestId);
+    await labour.save();
+
+    res.status(200).json({ message: 'Service request cancelled successfully.', profile: labour });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

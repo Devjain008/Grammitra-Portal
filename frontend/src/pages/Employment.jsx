@@ -272,18 +272,20 @@ const Employment = () => {
           </div>
 
           {/* Nearest toggle */}
-          <button
-            type="button"
-            onClick={() => setFilterNearest(f => !f)}
-            className={`flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold border shadow-sm transition-all active:scale-[0.98] ${
-              filterNearest
-                ? 'bg-[#1a3a2a] text-white border-[#1a3a2a]'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <MapPin className={`w-4 h-4 ${filterNearest ? 'text-emerald-400' : 'text-emerald-600'}`} />
-            {isEn ? 'Nearest First' : 'नज़दीकी पहले'}
-          </button>
+          {user?.role !== 'admin' && (
+            <button
+              type="button"
+              onClick={() => setFilterNearest(f => !f)}
+              className={`flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold border shadow-sm transition-all active:scale-[0.98] ${
+                filterNearest
+                  ? 'bg-[#1a3a2a] text-white border-[#1a3a2a]'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <MapPin className={`w-4 h-4 ${filterNearest ? 'text-emerald-400' : 'text-emerald-600'}`} />
+              {isEn ? 'Nearest First' : 'नज़दीकी पहले'}
+            </button>
+          )}
         </div>
 
         {/* Row 2: Dropdowns */}
@@ -471,7 +473,7 @@ const Employment = () => {
                       <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       {new Date(job.createdAt).toLocaleDateString()}
                     </span>
-                    {job._dist && <DistanceBadge info={job._dist} />}
+                    {user?.role !== 'admin' && job._dist && <DistanceBadge info={job._dist} />}
                   </div>
 
                   {/* Progress */}
@@ -501,40 +503,42 @@ const Employment = () => {
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex gap-2.5 mt-4">
-                  {(job.businessId?.ownerId || (typeof job.postedBy === 'object' ? job.postedBy?._id : job.postedBy)) !== user?._id && (
-                    <button
-                      type="button"
-                      onClick={() => handleChatWithEmployer(job)}
-                      className="bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all transform active:scale-95 text-sm"
-                    >
-                      <MessageCircle className="w-4 h-4" /> {isEn ? 'Chat' : 'चैट'}
-                    </button>
-                  )}
-                    <button
-                      type="button"
-                      disabled={isFull || hasApplied || isOwn}
-                      onClick={() => handleApply(job._id)}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 ${
-                        isFull
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  {user?.role !== 'admin' && (
+                    <div className="flex gap-2.5 mt-4">
+                    {(job.businessId?.ownerId || (typeof job.postedBy === 'object' ? job.postedBy?._id : job.postedBy)) !== user?._id && (
+                      <button
+                        type="button"
+                        onClick={() => handleChatWithEmployer(job)}
+                        className="bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all transform active:scale-95 text-sm"
+                      >
+                        <MessageCircle className="w-4 h-4" /> {isEn ? 'Chat' : 'चैट'}
+                      </button>
+                    )}
+                      <button
+                        type="button"
+                        disabled={isFull || hasApplied || isOwn}
+                        onClick={() => handleApply(job._id)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 ${
+                          isFull
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : hasApplied
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                            : isOwn
+                            ? 'bg-amber-50/50 text-amber-800 border border-amber-200 cursor-default'
+                            : 'bg-[#1a3a2a] hover:bg-[#1f4a35] text-white shadow-sm'
+                        }`}
+                      >
+                        {isFull
+                          ? (isEn ? 'Position Filled' : 'पद भर गया')
                           : hasApplied
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                          ? <><Check className="w-4 h-4" /> {isEn ? 'Applied' : 'आवेदित'}</>
                           : isOwn
-                          ? 'bg-amber-50/50 text-amber-800 border border-amber-200 cursor-default'
-                          : 'bg-[#1a3a2a] hover:bg-[#1f4a35] text-white shadow-sm'
-                      }`}
-                    >
-                      {isFull
-                        ? (isEn ? 'Position Filled' : 'पद भर गया')
-                        : hasApplied
-                        ? <><Check className="w-4 h-4" /> {isEn ? 'Applied' : 'आवेदित'}</>
-                        : isOwn
-                        ? (isEn ? 'Your Listing' : 'आपकी प्रविष्टि')
-                        : t('employment.applyNow')
-                      }
-                    </button>
-                  </div>
+                          ? (isEn ? 'Your Listing' : 'आपकी प्रविष्टि')
+                          : t('employment.applyNow')
+                        }
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Reviews Section */}
@@ -581,7 +585,7 @@ const Employment = () => {
                             </p>
                           )}
 
-                          {!isOwn && token && !job.reviews?.some(r => r.userId?.toString() === user?._id?.toString() || r.userId === user?._id) && (
+                          {!isOwn && token && user?.role !== 'admin' && !job.reviews?.some(r => r.userId?.toString() === user?._id?.toString() || r.userId === user?._id) && (
                             <form onSubmit={(e) => handleAddReview(e, job._id)} className="mt-3 pt-3 border-t border-gray-150 text-left space-y-2">
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[11px] font-bold text-gray-600 font-sans">{isEn ? 'Your Rating:' : 'आपकी रेटिंग:'}</span>

@@ -241,6 +241,13 @@ const Healthcare = () => {
         setClinicsLoading(true);
         const res = await axios.get(`${CONFIG.API_BASE_URL}/api/market/businesses`);
         const clinics = res.data.filter(b => b.type === 'clinic' || b.type === 'medical');
+        clinics.sort((a, b) => {
+          const isOwnA = a.ownerId?.toString() === user?._id?.toString();
+          const isOwnB = b.ownerId?.toString() === user?._id?.toString();
+          if (isOwnA && !isOwnB) return -1;
+          if (!isOwnA && isOwnB) return 1;
+          return 0;
+        });
         setRegisteredClinics(clinics);
       } catch (err) {
         console.error("Failed to fetch registered clinics:", err);
@@ -258,7 +265,7 @@ const Healthcare = () => {
     };
     fetchRegisteredClinics();
     fetchHealthcareProducts();
-  }, []);
+  }, [user]);
 
   const calculateClinicDistance = (clinic) => {
     if (!clinic) return { val: 9999, label: t('healthcare.unknown') || 'Unknown', type: 'unknown' };
@@ -622,15 +629,23 @@ const Healthcare = () => {
                               )}
                             </div>
                             <div className="mt-4 flex flex-wrap gap-2">
-                              <button type="button" onClick={() => handleCallClinic(clinic)}
-                                className="inline-flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm border-0 cursor-pointer">
-                                <Phone className="w-3.5 h-3.5" /> {locale === 'hi' ? 'कॉल करें' : 'Call'}
-                              </button>
-                              {clinic.ownerId && clinic.ownerId !== user?._id && (
-                                <button type="button" onClick={() => handleChatWithClinic(clinic.ownerId)}
-                                  className="inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm border-0 cursor-pointer">
-                                  <MessageSquare className="w-3.5 h-3.5" /> {locale === 'hi' ? 'चैट करें' : 'Chat'}
-                                </button>
+                              {clinic.ownerId !== user?._id ? (
+                                <>
+                                  <button type="button" onClick={() => handleCallClinic(clinic)}
+                                    className="inline-flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm border-0 cursor-pointer">
+                                    <Phone className="w-3.5 h-3.5" /> {locale === 'hi' ? 'कॉल करें' : 'Call'}
+                                  </button>
+                                  {clinic.ownerId && (
+                                    <button type="button" onClick={() => handleChatWithClinic(clinic.ownerId)}
+                                      className="inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm border-0 cursor-pointer">
+                                      <MessageSquare className="w-3.5 h-3.5" /> {locale === 'hi' ? 'चैट करें' : 'Chat'}
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic py-2">
+                                  {locale === 'hi' ? 'आपका क्लिनिक' : 'Your Clinic'}
+                                </span>
                               )}
                               {clinicProducts.length > 0 && (
                                 <button type="button" onClick={() => setOpenClinicDrawer(openClinicDrawer === clinic._id ? null : clinic._id)}

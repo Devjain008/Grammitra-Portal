@@ -36,6 +36,7 @@ const fileFilter = (req, file, cb) => {
     baseMime.startsWith('image/') ||
     baseMime.startsWith('video/') ||
     baseMime.startsWith('audio/') ||
+    baseMime === 'application/octet-stream' ||
     baseMime === 'application/pdf' ||
     baseMime === 'application/zip' ||
     baseMime === 'application/x-zip-compressed' ||

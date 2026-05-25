@@ -237,3 +237,55 @@ export const addJobReview = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Cancel job application
+// @route   POST /api/jobs/:id/cancel-apply
+// @access  Private
+export const cancelApplyJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+    
+    // Check if user is an applicant
+    const isApplicant = job.applicants.some(
+      (app) => app.userId.toString() === req.user._id.toString()
+    );
+
+    if (!isApplicant) {
+      return res.status(400).json({ message: 'You have not applied for this job' });
+    }
+
+    const applicant = job.applicants.find(
+      (app) => app.userId.toString() === req.user._id.toString()
+    );
+
+    // If already hired, decrement filled count
+    if (applicant.status === 'hired') {
+      job.filledCount = Math.max(0, job.filledCount - 1);
+      const { default: Employee } = await import('../models/Employee.js');
+      await Employee.deleteOne({
+        businessOwnerId: job.postedBy,
+        userId: req.user._id
+      });
+    }
+
+    // Remove user from applicants list
+    job.applicants = job.applicants.filter(
+      (app) => app.userId.toString() !== req.user._id.toString()
+    );
+
+    const updatedJob = await job.save();
+    const populatedJob = await updatedJob.populate('businessId', 'name location village district state contactNumber ownerId');
+
+    const io = req.app.get('socketio');
+    if (io) {
+      io.emit('job_updated', populatedJob);
+    }
+
+    res.status(200).json(populatedJob);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -63,6 +63,13 @@ const userSchema = new mongoose.Schema({
   orderNotifications: { type: Boolean, default: true },
   serviceNotifications: { type: Boolean, default: true },
   chatNotifications: { type: Boolean, default: true },
+  teacherReviews: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, default: '' },
+    createdAt: { type: Date, default: Date.now }
+  }],
 }, { timestamps: true });
 
 userSchema.index({ location: '2dsphere' });

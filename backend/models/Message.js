@@ -5,7 +5,7 @@ const messageSchema = new mongoose.Schema({
   senderId:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   senderName:{ type: String },
   content:   { type: String, default: '' },
-  type:      { type: String, enum: ['text','image','video','audio','file','system'], default: 'text' },
+  type:      { type: String, enum: ['text','image','video','audio','file','voice','system'], default: 'text' },
   fileUrl:   { type: String },
   fileName:  { type: String },
   fileMimeType: { type: String },
@@ -33,6 +33,9 @@ const chatRoomSchema = new mongoose.Schema({
   }],
   pinnedBy:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   archivedBy:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  blockedBy:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  mutedBy:      [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  deletedBy:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   onlyAdminsCanAddMembers: { type: Boolean, default: false },
   onlyAdminsCanSendMessages: { type: Boolean, default: false },
 }, { timestamps: true });

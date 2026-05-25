@@ -116,7 +116,7 @@ export const getVillageTeachers = async (req, res) => {
     
     // Find all teachers in the village
     const teachers = await User.find({ village: villageName, categories: 'teacher' })
-      .select('fullName email mobile profileImage teacherSubject teacherQualifications teacherContact teacherExperience bio gender');
+      .select('fullName email mobile profileImage teacherSubject teacherQualifications teacherContact teacherExperience bio gender rating totalRatings teacherReviews');
     
     // Fetch batches for these teachers
     const teacherIds = teachers.map(t => t._id);
@@ -433,5 +433,60 @@ export const markFeePaid = async (req, res) => {
     res.status(200).json({ message: 'Fee status updated.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Add review for a teacher profile
+// @route   POST /api/education/teachers/:id/review
+// @access  Private
+export const addTeacherReview = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Please provide a rating between 1 and 5.' });
+    }
+
+    const teacher = await User.findOne({ _id: req.params.id, categories: 'teacher' });
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher profile not found.' });
+    }
+
+    const alreadyReviewed = teacher.teacherReviews.find(
+      (r) => r.userId.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReviewed) {
+      return res.status(400).json({ message: 'You have already reviewed this teacher.' });
+    }
+
+    const review = {
+      userId: req.user._id,
+      name: req.user.fullName || 'User',
+      rating: Number(rating),
+      comment: comment || '',
+    };
+
+    teacher.teacherReviews.push(review);
+    teacher.totalRatings = teacher.teacherReviews.length;
+    const totalRatingSum = teacher.teacherReviews.reduce((acc, item) => item.rating + acc, 0);
+    teacher.rating = Math.round((totalRatingSum / teacher.teacherReviews.length) * 10) / 10;
+
+    await teacher.save();
+
+    // Map batches to teacher for return payload
+    const batches = await Batch.find({ teacherId: teacher._id, isActive: true });
+    const formattedTeacher = {
+      ...teacher.toObject(),
+      batches: batches.map(b => ({
+        _id: b._id,
+        batchName: b.batchName,
+        className: b.className,
+        subject: b.subject
+      }))
+    };
+
+    res.status(201).json({ message: 'Review added successfully', profile: formattedTeacher });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

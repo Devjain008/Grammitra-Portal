@@ -24,8 +24,42 @@ const Signup = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUploadSuccess, setImageUploadSuccess] = useState(false);
 
   const navigate = useNavigate();
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError(locale === 'hi' ? 'छवि का आकार 5MB से कम होना चाहिए।' : 'Image size must be less than 5MB.');
+      return;
+    }
+
+    const data = new FormData();
+    data.append('image', file);
+
+    setUploadingImage(true);
+    setImageUploadSuccess(false);
+    setError('');
+
+    try {
+      const res = await axios.post(`${CONFIG.API_BASE_URL}/api/auth/upload-profile`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setFormData(prev => ({ ...prev, profileImage: res.data.imageUrl }));
+      setImageUploadSuccess(true);
+    } catch (err) {
+      console.error("Upload error details:", err.response?.data || err.message);
+      setError(err.response?.data?.message || (locale === 'hi' ? 'छवि अपलोड करने में विफल।' : 'Failed to upload image.'));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const toggleCategory = (catId) => {
     setFormData(prev => ({
@@ -206,30 +240,74 @@ const Signup = () => {
             </div>
           </div>
 
-            {/* Profile Image URL (Optional) */}
-            <div className="md:col-span-2">
-              <label className="text-xs font-bold text-gray-700 mb-1.5 block">{locale === 'hi' ? 'प्रोफ़ाइल छवि URL (वैकल्पिक)' : 'Profile Image URL (Optional)'}</label>
-              <div className="flex gap-4 items-center">
-                <div className="relative flex-1 flex items-center border border-gray-200 bg-white rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#48b475]/30 focus-within:border-[#48b475] transition-all">
-                  <Camera className="text-gray-400 mr-3 w-5 h-5" />
+            {/* Profile Image (Browse & Paste URL) */}
+            <div className="md:col-span-2 bg-[#f7fcf9] border border-gray-150 p-5 rounded-2xl space-y-4 shadow-sm">
+              <label className="text-xs font-bold text-gray-700 block">{locale === 'hi' ? 'प्रोफ़ाइल छवि (वैकल्पिक)' : 'Profile Image (Optional)'}</label>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                {/* Image Preview / Browse Button */}
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-[#48b475] hover:border-[#3d9c63] flex items-center justify-center bg-white cursor-pointer transition-all shadow-inner relative">
+                    {formData.profileImage ? (
+                      <img 
+                        src={formData.profileImage} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center text-gray-400 group-hover:text-[#48b475] transition-colors">
+                        <Camera className="w-8 h-8 mb-1" />
+                        <span className="text-[10px] font-bold uppercase">{locale === 'hi' ? 'ब्राउज़ करें' : 'Browse'}</span>
+                      </div>
+                    )}
+                    {/* Hover overlay to change image */}
+                    {formData.profileImage && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                        {locale === 'hi' ? 'बदलें' : 'Change'}
+                      </div>
+                    )}
+                  </div>
                   <input 
-                    type="text"
-                    value={formData.profileImage}
-                    onChange={e => setFormData({...formData, profileImage: e.target.value})}
-                    placeholder={locale === 'hi' ? 'अपनी छवि का URL यहाँ पेस्ट करें...' : 'Paste your profile image URL here...'}
-                    className="w-full text-sm outline-none bg-transparent text-gray-800 placeholder-gray-400"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={uploadingImage}
                   />
                 </div>
-                {formData.profileImage && (
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden border border-gray-200 shrink-0">
-                    <img 
-                      src={formData.profileImage} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => { e.target.style.display = 'none'; }}
+
+                {/* Upload Status / Paste URL Input */}
+                <div className="flex-1 w-full space-y-3">
+                  {uploadingImage ? (
+                    <div className="flex items-center gap-2 text-[#48b475] text-xs font-bold">
+                      <span className="w-4 h-4 border-2 border-[#48b475] border-t-transparent rounded-full animate-spin"></span>
+                      <span>{locale === 'hi' ? 'छवि अपलोड हो रही है...' : 'Uploading image...'}</span>
+                    </div>
+                  ) : imageUploadSuccess ? (
+                    <div className="text-green-600 text-xs font-bold">
+                      ✓ {locale === 'hi' ? 'सफलतापूर्वक अपलोड किया गया!' : 'Successfully uploaded!'}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      {locale === 'hi' ? 'कोई छवि चुनें (JPG, PNG, WEBP, अधिकतम 5MB)' : 'Select an image (JPG, PNG, WEBP, max 5MB)'}
+                    </p>
+                  )}
+
+                  <div className="relative flex items-center border border-gray-200 bg-white rounded-xl px-3 py-2.5 focus-within:ring-1 focus-within:ring-[#48b475] transition-all">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase mr-2">{locale === 'hi' ? 'या URL:' : 'Or URL:'}</span>
+                    <input 
+                      type="text"
+                      value={formData.profileImage}
+                      onChange={e => {
+                        setFormData({...formData, profileImage: e.target.value});
+                        setImageUploadSuccess(false);
+                      }}
+                      placeholder={locale === 'hi' ? 'अपनी छवि का URL यहाँ पेस्ट करें...' : 'Paste profile image URL here...'}
+                      className="w-full text-xs outline-none bg-transparent text-gray-800 placeholder-gray-400 font-semibold"
                     />
                   </div>
-                )}
+                </div>
               </div>
             </div>
 

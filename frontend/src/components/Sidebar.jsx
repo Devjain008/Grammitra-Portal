@@ -39,6 +39,7 @@ const Sidebar = () => {
   ];
 
   const filteredMenuItems = menuItems.filter(item => {
+    if (item.path === '/chat' && user?.role === 'admin') return false;
     if (!item.roles) return true;
     if (!user) return false;
     return item.roles.some(role => userCategories.includes(role));
@@ -51,6 +52,8 @@ const Sidebar = () => {
     { icon: ShoppingBag, label: 'Market', key: 'sidebar.marketplace', path: '/marketplace' },
     { icon: MessageCircle, label: 'Chat', key: 'sidebar.liveChat', path: '/chat' },
   ];
+
+  const filteredBottomNav = bottomNavItems.filter(item => !(item.path === '/chat' && user?.role === 'admin'));
 
   return (
     <>
@@ -90,7 +93,7 @@ const Sidebar = () => {
 
       {/* ── Mobile Bottom Navigation Bar ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] flex items-stretch">
-        {bottomNavItems.map((item, idx) => {
+        {filteredBottomNav.map((item, idx) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink

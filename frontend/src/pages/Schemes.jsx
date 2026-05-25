@@ -267,7 +267,7 @@ const Schemes = () => {
         </div>
       ) : (
         /* Scheme Cards Grid */
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {filteredSchemes.map((scheme, index) => (
             <motion.div 
               key={scheme._id}

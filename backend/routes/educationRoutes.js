@@ -4,7 +4,7 @@ import {
   registerAsTeacher, getVillageTeachers,
   createBatch, getMyBatches, getStudentBatches, getBatchDetails,
   addStudentToBatch, requestJoinBatch, handleJoinRequest, removeStudentFromBatch,
-  updateFees, markAttendance, markFeePaid
+  updateFees, markAttendance, markFeePaid, addTeacherReview
 } from '../controllers/educationController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -17,6 +17,7 @@ router.get('/announcements', protect, getAnnouncements);
 // Teacher registration
 router.post('/register-teacher', protect, registerAsTeacher);
 router.get('/teachers', protect, getVillageTeachers);
+router.post('/teachers/:id/review', protect, addTeacherReview);
 
 // Batch management (Teacher)
 router.post('/batches', protect, createBatch);

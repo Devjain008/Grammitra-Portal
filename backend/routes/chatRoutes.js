@@ -3,7 +3,7 @@ import {
   accessChatRoom, getMessages, getUserRooms, createGroupRoom, deleteMessage,
   addGroupMember, removeGroupMember, requestJoinGroup, approveGroupRequest, getGroupJoinRequests,
   renameGroup, addGroupMemberByMobile, makeGroupAdmin, exitGroup, togglePinRoom, toggleArchiveRoom, clearChat,
-  searchUserByMobile, uploadChatFile, updateGroupSettings
+  searchUserByMobile, uploadChatFile, updateGroupSettings, toggleMuteRoom, toggleBlockRoom, deleteChat
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
@@ -36,10 +36,13 @@ router.post('/group/:roomId/make-admin', makeGroupAdmin);
 router.post('/group/:roomId/exit', exitGroup);
 router.put('/group/:roomId/settings', updateGroupSettings);
 
-// Room Actions (Pin, Archive, Clear)
+// Room Actions (Pin, Archive, Clear, Mute, Block, Delete)
 router.post('/room/:roomId/pin', togglePinRoom);
 router.post('/room/:roomId/archive', toggleArchiveRoom);
 router.post('/room/:roomId/clear', clearChat);
+router.post('/room/:roomId/mute', toggleMuteRoom);
+router.post('/room/:roomId/block', toggleBlockRoom);
+router.post('/room/:roomId/delete-chat', deleteChat);
 
 router.get('/:roomId', getMessages);
 

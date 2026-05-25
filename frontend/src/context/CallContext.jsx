@@ -86,10 +86,8 @@ export const CallProvider = ({ children }) => {
 
   const pcRef = useRef(null);
   const callTimerRef = useRef(null);
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const remoteAudioRef = useRef(null);
   const callStateRef = useRef('idle');
+  const queuedRemoteCandidates = useRef([]); // Queued remote ICE candidates
 
   // Sync ref to avoid closure issues
   useEffect(() => {
@@ -106,20 +104,19 @@ export const CallProvider = ({ children }) => {
     return () => stopRingtone();
   }, [callState]);
 
-  // Local/Remote streams assignment effect
-  useEffect(() => {
-    if (callState !== 'idle') {
-      if (localVideoRef.current && localStream && callType === 'video') {
-        localVideoRef.current.srcObject = localStream;
-      }
-      if (remoteVideoRef.current && remoteStream && callType === 'video') {
-        remoteVideoRef.current.srcObject = remoteStream;
-      }
-      if (remoteAudioRef.current && remoteStream && callType === 'audio') {
-        remoteAudioRef.current.srcObject = remoteStream;
+  const processQueuedCandidates = async () => {
+    if (pcRef.current && pcRef.current.remoteDescription) {
+      const candidates = queuedRemoteCandidates.current;
+      queuedRemoteCandidates.current = [];
+      for (const cand of candidates) {
+        try {
+          await pcRef.current.addIceCandidate(new RTCIceCandidate(cand));
+        } catch (err) {
+          console.error('Error adding queued ICE candidate:', err);
+        }
       }
     }
-  }, [localStream, remoteStream, callState, callType]);
+  };
 
   // Handle incoming calls socket events
   useEffect(() => {
@@ -147,6 +144,7 @@ export const CallProvider = ({ children }) => {
           await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
           setCallState('active');
           startCallTimer();
+          await processQueuedCandidates();
         } catch (err) {
           console.error('Error setting remote description:', err);
           endCall();
@@ -155,12 +153,14 @@ export const CallProvider = ({ children }) => {
     };
 
     const onCallIceCandidate = async (data) => {
-      if (pcRef.current) {
+      if (pcRef.current && pcRef.current.remoteDescription) {
         try {
           await pcRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
         } catch (err) {
           console.error('Error adding ICE candidate:', err);
         }
+      } else {
+        queuedRemoteCandidates.current.push(data.candidate);
       }
     };
 
@@ -221,20 +221,43 @@ export const CallProvider = ({ children }) => {
 
   const startCall = async (targetUser, type) => {
     if (!socket || !user) return;
-    setCallType(type);
     setCallState('calling');
     setActiveCallUser(targetUser);
+
+    let stream = null;
+    let actualType = type;
 
     try {
       const constraints = {
         audio: true,
         video: type === 'video'
       };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setLocalStream(stream);
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      console.warn('Failed to get primary video/audio media stream:', err);
+      if (type === 'video') {
+        try {
+          // Fallback 1: try audio only
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          actualType = 'audio';
+          setCallType('audio');
+          alert(locale === 'hi' ? 'कैमरा व्यस्त है या उपलब्ध नहीं है। ऑडियो कॉल पर स्विच किया जा रहा है।' : 'Camera device is in use or unavailable. Switching to audio call.');
+        } catch (audioErr) {
+          console.error('Audio fallback failed as well:', audioErr);
+        }
+      }
+    }
 
+    setCallType(actualType);
+    setLocalStream(stream);
+
+    try {
       const pc = initPeerConnection(targetUser.id);
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      if (stream) {
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      } else {
+        alert(locale === 'hi' ? 'कैमरा और माइक व्यस्त हैं। कॉल बिना ऑडियो/वीडियो के कनेक्ट की जा रही है।' : 'Camera and microphone are in use or permissions denied. Connecting call in receive-only mode.');
+      }
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -244,32 +267,58 @@ export const CallProvider = ({ children }) => {
         callerId: user._id,
         callerName: user.fullName || 'User',
         callerImage: user.profileImage,
-        callType: type,
+        callType: actualType,
         offer
       });
     } catch (err) {
-      console.error('Failed to get media devices:', err);
-      alert(locale === 'hi' ? 'कैमरा या माइक एक्सेस करने में विफल।' : 'Failed to access camera or microphone.');
+      console.error('Failed to initiate calling:', err);
+      alert(locale === 'hi' ? 'कॉल शुरू करने में विफल।' : 'Failed to initiate call.');
       endCall();
     }
   };
 
   const acceptCall = async () => {
     if (!socket || !activeCallUser || !activeCallUser.offer) return;
+    setCallState('active');
+    startCallTimer();
+
+    let stream = null;
+    let actualCallType = callType;
+
     try {
       const constraints = {
         audio: true,
         video: callType === 'video'
       };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setLocalStream(stream);
-      setCallState('active');
-      startCallTimer();
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      console.warn('Accept call media capture failed:', err);
+      if (callType === 'video') {
+        try {
+          // Fallback 1: try audio only
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          actualCallType = 'audio';
+          setCallType('audio');
+          alert(locale === 'hi' ? 'कैमरा डिवाइस व्यस्त है। केवल ऑडियो के साथ कॉल स्वीकार की जा रही है।' : 'Camera device is in use. Accepting call with audio only.');
+        } catch (audioErr) {
+          console.error('Accept call audio fallback failed:', audioErr);
+        }
+      }
+    }
 
+    setLocalStream(stream);
+
+    try {
       const pc = initPeerConnection(activeCallUser.id);
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      if (stream) {
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      } else {
+        alert(locale === 'hi' ? 'ऑडियो/वीडियो डिवाइस व्यस्त हैं। कॉल बिना आपके माइक/कैमरा के कनेक्ट की जा रही है।' : 'Audio/video devices are in use. Connecting call in receive-only mode.');
+      }
 
       await pc.setRemoteDescription(new RTCSessionDescription(activeCallUser.offer));
+      await processQueuedCandidates();
+
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
@@ -293,6 +342,7 @@ export const CallProvider = ({ children }) => {
 
   const endCall = (emitEvent = true) => {
     clearInterval(callTimerRef.current);
+    queuedRemoteCandidates.current = [];
     if (emitEvent && socket && activeCallUser) {
       socket.emit('call:end', { targetId: activeCallUser.id });
     }
@@ -398,7 +448,15 @@ export const CallProvider = ({ children }) => {
 
             {/* Hidden audio element for audio-only calls */}
             {callType === 'audio' && callState === 'active' && remoteStream && (
-              <audio ref={remoteAudioRef} autoPlay playsInline />
+              <audio 
+                ref={(el) => {
+                  if (el && remoteStream && el.srcObject !== remoteStream) {
+                    el.srcObject = remoteStream;
+                  }
+                }} 
+                autoPlay 
+                playsInline 
+              />
             )}
 
             {/* Video Streams Section */}
@@ -406,7 +464,16 @@ export const CallProvider = ({ children }) => {
               <div className="relative w-full max-w-2xl aspect-video rounded-3xl bg-gray-900 overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center my-4">
                 {/* Remote Video (Full Screen inside container) */}
                 {callState === 'active' && remoteStream ? (
-                  <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                  <video 
+                    ref={(el) => {
+                      if (el && remoteStream && el.srcObject !== remoteStream) {
+                        el.srcObject = remoteStream;
+                      }
+                    }} 
+                    autoPlay 
+                    playsInline 
+                    className="w-full h-full object-cover" 
+                  />
                 ) : (
                   <div className="text-center text-gray-500 text-sm space-y-2">
                     <Loader className="animate-spin w-8 h-8 text-teal-500 mx-auto" />
@@ -416,7 +483,17 @@ export const CallProvider = ({ children }) => {
 
                 {/* Local Video (Floating Picture-in-Picture) */}
                 <div className="absolute bottom-4 right-4 w-1/4 min-w-[100px] aspect-video rounded-2xl bg-gray-800 border-2 border-white/20 shadow-xl overflow-hidden z-10">
-                  <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                  <video 
+                    ref={(el) => {
+                      if (el && localStream && el.srcObject !== localStream) {
+                        el.srcObject = localStream;
+                      }
+                    }} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className="w-full h-full object-cover" 
+                  />
                   {isVideoOff && (
                     <div className="absolute inset-0 bg-gray-900 flex items-center justify-center text-white text-[10px] font-bold">
                       Camera Off

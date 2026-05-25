@@ -9,7 +9,7 @@ import { CONFIG } from '../utils/constants';
 import { 
   Users, Search, Filter, MessageSquare, Phone, Video, 
   ChevronRight, X, GraduationCap, Clock, Award, Briefcase, 
-  MapPin, Loader, AlertCircle, CheckCircle
+  MapPin, Loader, AlertCircle, CheckCircle, Star, ChevronDown
 } from 'lucide-react';
 
 const Toast = ({ message, type, onClose }) => (
@@ -32,6 +32,28 @@ const Toast = ({ message, type, onClose }) => (
     </button>
   </motion.div>
 );
+
+/* ─── Distance badge ─── */
+const DistanceBadge = ({ info, isEn }) => {
+  if (!info || info.val === 9999) return null;
+  const { val, label, type } = info;
+  let cls = 'bg-blue-50 text-blue-700 border-blue-100';
+  let dot = '🔵';
+  if (type === 'gps') {
+    if (val < 1)        { cls = 'bg-emerald-50 text-emerald-700 border-emerald-100'; dot = '🟢'; }
+    else if (val <= 10) { cls = 'bg-teal-50 text-teal-700 border-teal-100'; dot = '🔵'; }
+    else if (val <= 25) { cls = 'bg-amber-50 text-amber-700 border-amber-100'; dot = '🟡'; }
+    else                { cls = 'bg-rose-50 text-rose-700 border-rose-100'; dot = '🔴'; }
+  } else if (type === 'text') {
+    if (val === 0.1) cls = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    else if (val === 10) cls = 'bg-teal-50 text-teal-700 border-teal-100';
+  }
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${cls} shadow-sm`}>
+      {dot} {label}
+    </span>
+  );
+};
 
 const Teachers = () => {
   const { locale, t } = useLanguage();
@@ -58,6 +80,71 @@ const Teachers = () => {
   const [selectedQualification, setSelectedQualification] = useState('');
   const [selectedExperience, setSelectedExperience] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [selectedSort, setSelectedSort] = useState('default');
+  const [userCoords, setUserCoords] = useState(null);
+
+  // Reviews & Feedback State
+  const [expandedReviews, setExpandedReviews] = useState({});
+  const [submitRatings, setSubmitRatings] = useState({});
+  const [submitComments, setSubmitComments] = useState({});
+
+  const toggleReviews = (teacherId) => {
+    setExpandedReviews(prev => ({ ...prev, [teacherId]: !prev[teacherId] }));
+    if (!submitRatings[teacherId]) {
+      setSubmitRatings(prev => ({ ...prev, [teacherId]: 5 }));
+    }
+  };
+
+  const handleAddTeacherReview = async (e, teacherId) => {
+    e.preventDefault();
+    if (!token) return showToast(isEn ? 'Please log in to submit a review.' : 'समीक्षा सबमिट करने के लिए कृपया लॉग इन करें।', 'error');
+    const rating = submitRatings[teacherId] || 5;
+    const comment = submitComments[teacherId] || '';
+
+    try {
+      const res = await axios.post(
+        `${CONFIG.API_BASE_URL}/api/education/teachers/${teacherId}/review`,
+        { rating, comment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setTeachers(prev => prev.map(t => t._id === teacherId ? res.data.profile : t));
+      setSubmitComments(prev => ({ ...prev, [teacherId]: '' }));
+      setSubmitRatings(prev => ({ ...prev, [teacherId]: 5 }));
+      showToast(res.data.message || (isEn ? 'Review posted successfully!' : 'समीक्षा सफलतापूर्वक पोस्ट की गई!'), 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || (isEn ? 'Failed to submit review.' : 'समीक्षा सबमिट करने में विफल।'), 'error');
+    }
+  };
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => setUserCoords({ lat: coords.latitude, lng: coords.longitude }),
+        () => { if (user?.location?.coordinates?.length === 2) setUserCoords({ lng: user.location.coordinates[0], lat: user.location.coordinates[1] }); }
+      );
+    } else if (user?.location?.coordinates?.length === 2) {
+      setUserCoords({ lng: user.location.coordinates[0], lat: user.location.coordinates[1] });
+    }
+  }, [user]);
+
+  const calculateDistance = (teacherObj) => {
+    const tc = teacherObj.location;
+    if (tc && userCoords && tc.coordinates?.length === 2) {
+      const [tLng, tLat] = tc.coordinates;
+      const R = 6371, dLat = (tLat - userCoords.lat) * Math.PI / 180, dLon = (tLng - userCoords.lng) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(userCoords.lat*Math.PI/180)*Math.cos(tLat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return { val: d, label: `${d.toFixed(1)} km`, type: 'gps' };
+    }
+    if (user) {
+      const uV = (user.village||'').toLowerCase(), uD = (user.district||'').toLowerCase(), uS = (user.state||'').toLowerCase();
+      const tV = (teacherObj.village||'').toLowerCase(), tD = (teacherObj.district||'').toLowerCase(), tS = (teacherObj.state||'').toLowerCase();
+      if (uV && tV && uV === tV) return { val: 0.1, label: isEn ? 'Same Village' : 'समान गाँव', type: 'text' };
+      if (uD && tD && uD === tD) return { val: 10, label: isEn ? 'Same District' : 'समान जिला', type: 'text' };
+      if (uS && tS && uS === tS) return { val: 100, label: isEn ? 'Same State' : 'समान राज्य', type: 'text' };
+    }
+    return { val: 9999, label: teacherObj.village || (isEn ? 'Nearby' : 'पास में'), type: 'unknown' };
+  };
 
   useEffect(() => {
     const fetchTeachers = async () => {
@@ -152,6 +239,18 @@ const Teachers = () => {
     })();
 
     return matchesSearch && matchesSubject && matchesQual && matchesExp;
+  })
+  .map(t => ({ ...t, _dist: calculateDistance(t) }))
+  .sort((a, b) => {
+    const isSelfA = a._id === user?._id;
+    const isSelfB = b._id === user?._id;
+    if (isSelfA && !isSelfB) return -1;
+    if (!isSelfA && isSelfB) return 1;
+
+    if (selectedSort === 'distance') {
+      return (a._dist?.val || 9999) - (b._dist?.val || 9999);
+    }
+    return 0;
   });
 
   return (
@@ -191,6 +290,21 @@ const Teachers = () => {
               className="w-full text-sm pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 font-semibold text-gray-700 transition-all"
             />
           </div>
+
+          {/* Nearest First Toggle */}
+          {user?.role !== 'admin' && (
+            <button type="button"
+              onClick={() => setSelectedSort(prev => prev === 'distance' ? 'default' : 'distance')}
+              className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 border cursor-pointer shrink-0 ${
+                selectedSort === 'distance'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                  : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+              }`}>
+              <MapPin className="w-4 h-4"
+                style={{ color: selectedSort === 'distance' ? '#fff' : '#059669' }} />
+              <span>{isEn ? 'Nearest First' : 'नज़दीकी पहले'}</span>
+            </button>
+          )}
 
           {/* Clean Filters Button */}
           {(selectedSubject || selectedQualification || selectedExperience || searchTerm) && (
@@ -287,7 +401,7 @@ const Teachers = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all p-6 relative overflow-hidden flex flex-col justify-between h-full group"
+                className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all p-6 relative overflow-hidden flex flex-col group"
               >
                 {isSelf && (
                   <span className="absolute top-4 right-4 bg-emerald-500 text-white px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider shadow">
@@ -324,23 +438,28 @@ const Teachers = () => {
                             {teacher.teacherExperience} {isEn ? 'Years Experience' : 'वर्ष का अनुभव'}
                           </p>
                         )}
+                        {/* Rating */}
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                          <span className="text-xs font-bold text-gray-700">{teacher.rating > 0 ? teacher.rating : '0'}</span>
+                          <span className="text-xs text-gray-400">({teacher.totalRatings || teacher.teacherReviews?.length || 0})</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Subject Badges */}
-                  {teacher.teacherSubject && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {teacher.teacherSubject.split(',').map((subj, sIdx) => (
-                        <span 
-                          key={sIdx} 
-                          className="bg-emerald-50/70 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-lg border border-emerald-100"
-                        >
-                          {subj.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {user?.role !== 'admin' && teacher._dist && <DistanceBadge info={teacher._dist} isEn={isEn} />}
+                    {teacher.teacherSubject && teacher.teacherSubject.split(',').map((subj, sIdx) => (
+                      <span 
+                        key={sIdx} 
+                        className="bg-emerald-50/70 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-lg border border-emerald-100"
+                      >
+                        {subj.trim()}
+                      </span>
+                    ))}
+                  </div>
 
                   {/* Bio/Intro */}
                   {teacher.bio && (
@@ -367,7 +486,7 @@ const Teachers = () => {
                     </button>
 
                     {/* Chat button */}
-                    {!isSelf && (
+                    {user?.role !== 'admin' && !isSelf && (
                       <button 
                         onClick={() => handleChat(teacher._id, teacher.fullName)}
                         className="flex items-center gap-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-xl border-0 cursor-pointer transition-all active:scale-95 shadow-sm"
@@ -377,6 +496,90 @@ const Teachers = () => {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Reviews Section */}
+                <div className="border-t border-gray-100 px-5 py-3 bg-gray-50/50 mt-3 -mx-6 -mb-6 rounded-b-3xl">
+                  <button
+                    onClick={() => toggleReviews(teacher._id)}
+                    className="w-full flex items-center justify-between text-xs font-bold text-gray-600 hover:text-emerald-600 transition-colors bg-transparent border-0 cursor-pointer p-0"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      {isEn ? `Reviews (${teacher.teacherReviews?.length || 0})` : `समीक्षाएं (${teacher.teacherReviews?.length || 0})`}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedReviews[teacher._id] ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {expandedReviews[teacher._id] && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        {teacher.teacherReviews && teacher.teacherReviews.length > 0 ? (
+                          <div className="space-y-2.5 max-h-48 overflow-y-auto mt-3 pr-1">
+                            {teacher.teacherReviews.map((rev) => (
+                              <div key={rev._id || rev.createdAt} className="bg-white p-2.5 rounded-xl border border-gray-100 text-left">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="font-bold text-gray-800 text-xs">{rev.name}</span>
+                                  <div className="flex items-center gap-0.5">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star key={i} className={`w-3 h-3 ${i < rev.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
+                                    ))}
+                                  </div>
+                                </div>
+                                <p className="text-gray-600 text-[11px] leading-normal">{rev.comment}</p>
+                                <span className="text-[9px] text-gray-400 block mt-1">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-gray-400 italic text-center mt-3 py-2 bg-white rounded-xl border border-dashed border-gray-200">
+                            {isEn ? 'No reviews yet. Be the first!' : 'अभी तक कोई समीक्षा नहीं है। पहली समीक्षा लिखें!'}
+                          </p>
+                        )}
+
+                        {user?.role !== 'admin' && !isSelf && token && !teacher.teacherReviews?.some(r => r.userId?.toString() === user?._id?.toString() || r.userId === user?._id) && (
+                          <form onSubmit={(e) => handleAddTeacherReview(e, teacher._id)} className="mt-3 pt-3 border-t border-gray-150 text-left space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-gray-600 font-sans">{isEn ? 'Your Rating:' : 'आपकी रेटिंग:'}</span>
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((stars) => (
+                                  <button
+                                    key={stars}
+                                    type="button"
+                                    onClick={() => setSubmitRatings(prev => ({ ...prev, [teacher._id]: stars }))}
+                                    className="p-0 border-0 bg-transparent cursor-pointer flex items-center"
+                                  >
+                                    <Star className={`w-4 h-4 transition-colors ${stars <= (submitRatings[teacher._id] || 5) ? 'text-amber-400 fill-amber-400' : 'text-gray-300 hover:text-amber-300'}`} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={submitComments[teacher._id] || ''}
+                                onChange={(e) => setSubmitComments(prev => ({ ...prev, [teacher._id]: e.target.value }))}
+                                placeholder={isEn ? 'Write a review…' : 'समीक्षा लिखें…'}
+                                className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-450 text-gray-700 font-medium"
+                                required
+                              />
+                              <button
+                                type="submit"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 rounded-xl active:scale-95 transition-all flex items-center justify-center shrink-0 border-0 cursor-pointer"
+                              >
+                                {isEn ? 'Post' : 'पोस्ट'}
+                              </button>
+                            </div>
+                          </form>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             );
@@ -498,10 +701,13 @@ const Teachers = () => {
 
                 {/* Location and Contact Info */}
                 <div className="space-y-1.5 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-rose-500" />
-                    <span className="font-semibold">{selectedTeacher.village || user?.village || (isEn ? 'Nearby Village' : 'पड़ोसी गाँव')}</span>
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs text-gray-500 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-rose-500" />
+                      <span className="font-semibold">{selectedTeacher.village || user?.village || (isEn ? 'Nearby Village' : 'पड़ोसी गाँव')}</span>
+                    </p>
+                    {user?.role !== 'admin' && selectedTeacher._dist && <DistanceBadge info={selectedTeacher._dist} isEn={isEn} />}
+                  </div>
                   <p className="text-xs text-gray-500 flex items-center gap-2">
                     <Phone className="w-4 h-4 text-emerald-500" />
                     <span className="font-semibold">{selectedTeacher.teacherContact || selectedTeacher.mobile}</span>
@@ -509,7 +715,7 @@ const Teachers = () => {
                 </div>
 
                 {/* Actions Button */}
-                {selectedTeacher._id !== user?._id && (
+                {user?.role !== 'admin' && selectedTeacher._id !== user?._id && (
                   <div className="pt-4 flex gap-2">
                     {/* Live Audio Call */}
                     <button 
@@ -520,19 +726,10 @@ const Teachers = () => {
                       {isEn ? 'Voice Call' : 'ऑडियो कॉल'}
                     </button>
 
-                    {/* Live Video Call */}
-                    <button 
-                      onClick={() => handleCall(selectedTeacher, 'video')}
-                      className="flex-1 flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 rounded-2xl shadow-md border-0 cursor-pointer transition-all active:scale-95"
-                    >
-                      <Video className="w-4 h-4" />
-                      {isEn ? 'Video Call' : 'वीडियो कॉल'}
-                    </button>
-
                     {/* Private Chat */}
                     <button 
                       onClick={() => handleChat(selectedTeacher._id, selectedTeacher.fullName)}
-                      className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl shadow-md border-0 cursor-pointer transition-all active:scale-95"
+                      className="flex-grow-0 p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl shadow-md border-0 cursor-pointer transition-all active:scale-95 flex items-center justify-center"
                       title={isEn ? 'Chat Now' : 'चैट शुरू करें'}
                     >
                       <MessageSquare className="w-5 h-5" />

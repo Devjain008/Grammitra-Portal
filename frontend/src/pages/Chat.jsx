@@ -12,7 +12,7 @@ import {
   Trash2, Edit3, LogOut, Crown, Search, UserPlus, CheckCircle,
   Paperclip, Mic, MicOff, Play, Pause, Download, Image, Film,
   Music, FileText, Phone, Video, Info, ChevronLeft, Volume2,
-  StopCircle, Settings
+  StopCircle, Settings, VolumeX, Ban
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -410,6 +410,8 @@ const Chat = () => {
   const isPinned = (room) => room.pinnedBy?.some(id => id?.toString() === user?._id?.toString());
   const isArchived = (room) => room.archivedBy?.some(id => id?.toString() === user?._id?.toString());
   const isAdmin = (room) => room.adminIds?.some(id => id?.toString() === user?._id?.toString()) || room.admins?.some(id => id?.toString() === user?._id?.toString());
+  const isMuted = (room) => room.mutedBy?.some(id => id?.toString() === user?._id?.toString());
+  const isBlocked = (room) => room.blockedBy?.some(id => id?.toString() === user?._id?.toString());
 
   /* ═══ Send text message ═══ */
   const handleSendMessage = (e) => {
@@ -649,6 +651,40 @@ const Chat = () => {
     setRooms(prev => prev.map(r => r._id === roomId ? { ...r, lastMessage: '' } : r));
     setSidebarMenuOpen(null); setChatHeaderMenuOpen(false);
   };
+  const handleMuteRoom = async (roomId) => {
+    try {
+      const res = await axios.post(`${BASE}/api/chat/room/${roomId}/mute`, {}, { headers: authHeader });
+      setRooms(prev => prev.map(r => r._id === roomId ? res.data : r));
+      if (activeRoom?._id === roomId) setActiveRoom(res.data);
+      setSidebarMenuOpen(null); setChatHeaderMenuOpen(false);
+    } catch (err) {
+      alert('Failed to update mute setting.');
+    }
+  };
+  const handleBlockRoom = async (roomId) => {
+    try {
+      const res = await axios.post(`${BASE}/api/chat/room/${roomId}/block`, {}, { headers: authHeader });
+      setRooms(prev => prev.map(r => r._id === roomId ? res.data : r));
+      if (activeRoom?._id === roomId) setActiveRoom(res.data);
+      setSidebarMenuOpen(null); setChatHeaderMenuOpen(false);
+    } catch (err) {
+      alert('Failed to update block setting.');
+    }
+  };
+  const handleDeleteChat = async (roomId) => {
+    if (!window.confirm(locale === 'hi' ? 'यह चैट पूरी तरह से डिलीट करें?' : 'Delete this chat completely?')) return;
+    try {
+      await axios.post(`${BASE}/api/chat/room/${roomId}/delete-chat`, {}, { headers: authHeader });
+      setRooms(prev => prev.filter(r => r._id !== roomId));
+      if (activeRoom?._id === roomId) {
+        setActiveRoom(null);
+        setMessages([]);
+      }
+      setSidebarMenuOpen(null); setChatHeaderMenuOpen(false);
+    } catch (err) {
+      alert('Failed to delete chat.');
+    }
+  };
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
@@ -858,37 +894,15 @@ const Chat = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline">
                         <span className="text-xs font-bold text-gray-800 truncate">{getRoomName(room)}</span>
-                        {room.lastMessageAt && <span className="text-[9px] text-gray-400 shrink-0 ml-1">{new Date(room.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                        <div className="flex items-center gap-1 shrink-0 ml-1">
+                          {isMuted(room) && <VolumeX className="w-3 h-3 text-gray-400" />}
+                          {isBlocked(room) && <Ban className="w-3 h-3 text-red-500" />}
+                          {room.lastMessageAt && <span className="text-[9px] text-gray-400">{new Date(room.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                        </div>
                       </div>
                       <p className="text-[10px] text-gray-500 truncate mt-0.5">{room.lastMessage || getRoomSubtitle(room)}</p>
                     </div>
                   </button>
-
-                  {/* Room 3-dot menu */}
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={e => { e.stopPropagation(); setSidebarMenuOpen(sidebarMenuOpen === room._id ? null : room._id); }}
-                      className="p-1 rounded-full hover:bg-gray-200 text-gray-400">
-                      <MoreVertical className="w-3.5 h-3.5" />
-                    </button>
-                    <AnimatePresence>
-                      {sidebarMenuOpen === room._id && (
-                        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }} transition={{ duration: 0.1 }}
-                          className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
-                          onClick={e => e.stopPropagation()}>
-                          {[
-                            { icon: <Pin className="w-3.5 h-3.5 text-amber-500" />, label: pinned ? (locale === 'hi' ? 'पिन हटाएँ' : 'Unpin') : (locale === 'hi' ? 'पिन करें' : 'Pin'), action: () => handlePinRoom(room._id) },
-                            { icon: <Archive className="w-3.5 h-3.5 text-blue-500" />, label: isArchived(room) ? (locale === 'hi' ? 'अनआर्काइव' : 'Unarchive') : (locale === 'hi' ? 'आर्काइव' : 'Archive'), action: () => handleArchiveRoom(room._id) },
-                            { icon: <Trash2 className="w-3.5 h-3.5 text-red-500" />, label: locale === 'hi' ? 'चैट हटाएँ' : 'Clear Chat', action: () => handleClearChat(room._id), danger: true },
-                          ].map((item, i) => (
-                            <button key={i} onClick={item.action}
-                              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors ${item.danger ? 'text-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'} ${i > 0 ? 'border-t border-gray-50' : ''}`}>
-                              {item.icon} {item.label}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
                 </div>
               );
             })}
@@ -982,7 +996,10 @@ const Chat = () => {
                             {[
                               { icon: <Pin className="w-3.5 h-3.5 text-amber-500" />, label: isPinned(activeRoom) ? (locale === 'hi' ? 'पिन हटाएँ' : 'Unpin') : (locale === 'hi' ? 'पिन करें' : 'Pin Chat'), action: () => handlePinRoom(activeRoom._id) },
                               { icon: <Archive className="w-3.5 h-3.5 text-blue-500" />, label: isArchived(activeRoom) ? (locale === 'hi' ? 'अनआर्काइव' : 'Unarchive') : (locale === 'hi' ? 'आर्काइव' : 'Archive'), action: () => handleArchiveRoom(activeRoom._id) },
-                              { icon: <Trash2 className="w-3.5 h-3.5 text-red-500" />, label: locale === 'hi' ? 'सब हटाएँ' : 'Clear All', action: () => handleClearChat(activeRoom._id), danger: true },
+                              { icon: <VolumeX className="w-3.5 h-3.5 text-gray-500" />, label: isMuted(activeRoom) ? (locale === 'hi' ? 'अनम्यूट' : 'Unmute') : (locale === 'hi' ? 'म्यूट' : 'Mute'), action: () => handleMuteRoom(activeRoom._id) },
+                              ...(activeRoom.roomType === 'direct' ? [{ icon: <Ban className="w-3.5 h-3.5 text-red-500" />, label: isBlocked(activeRoom) ? (locale === 'hi' ? 'अनब्लॉक' : 'Unblock') : (locale === 'hi' ? 'ब्लॉक' : 'Block'), action: () => handleBlockRoom(activeRoom._id) }] : []),
+                              { icon: <Trash2 className="w-3.5 h-3.5 text-gray-400" />, label: locale === 'hi' ? 'चैट मिटाएँ' : 'Clear Chat', action: () => handleClearChat(activeRoom._id) },
+                              { icon: <Trash2 className="w-3.5 h-3.5 text-red-500" />, label: locale === 'hi' ? 'चैट डिलीट करें' : 'Delete Chat', action: () => handleDeleteChat(activeRoom._id), danger: true },
                               ...(activeRoom.roomType === 'group' ? [{ icon: <LogOut className="w-3.5 h-3.5 text-red-600" />, label: locale === 'hi' ? 'ग्रुप छोड़ें' : 'Exit Group', action: () => handleExitGroup(activeRoom._id), danger: true }] : []),
                             ].map((item, i) => (
                               <button key={i} onClick={item.action}
@@ -1087,6 +1104,23 @@ const Chat = () => {
                     <div className="bg-gray-50 border border-gray-200 text-gray-500 rounded-2xl py-3.5 px-4 text-center text-xs font-semibold flex items-center justify-center gap-2 select-none shadow-inner">
                       <span>🔒</span>
                       {locale === 'hi' ? 'केवल एडमिन ही इस ग्रुप में संदेश भेज सकते हैं' : 'Only admins can send messages in this group'}
+                    </div>
+                  ) : activeRoom.blockedBy && activeRoom.blockedBy.length > 0 ? (
+                    <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl py-3.5 px-4 text-center text-xs font-bold flex items-center justify-center gap-2 select-none shadow-inner">
+                      <span>🚫</span>
+                      {activeRoom.blockedBy.some(id => id?.toString() === user?._id?.toString()) ? (
+                        <span className="flex items-center gap-2 justify-center flex-wrap">
+                          {locale === 'hi' ? 'आपने इस यूज़र को ब्लॉक किया है।' : 'You have blocked this contact.'}
+                          <button
+                            onClick={() => handleBlockRoom(activeRoom._id)}
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg transition active:scale-95 cursor-pointer border-0 uppercase tracking-wide font-sans ml-1.5"
+                          >
+                            {locale === 'hi' ? 'अनब्लॉक करें' : 'Unblock'}
+                          </button>
+                        </span>
+                      ) : (
+                        <span>{locale === 'hi' ? 'आप इस यूज़र को संदेश नहीं भेज सकते।' : 'You cannot send messages to this contact.'}</span>
+                      )}
                     </div>
                   ) : (
                     <>

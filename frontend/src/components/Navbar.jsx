@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useSocket } from '../context/SocketContext';
-import { Search, Mic, Bell, Bot, UserCircle, ShoppingCart, X, CheckCircle, Package, LogOut, Store, Mail, Phone, MapPin, Edit, Save, Loader, LineChart, Wrench, MessageSquare } from 'lucide-react';
+import { Search, Mic, Bell, Bot, UserCircle, ShoppingCart, X, CheckCircle, Package, LogOut, Store, Mail, Phone, MapPin, Edit, Save, Loader, LineChart, Wrench, MessageSquare, Camera, Briefcase } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import VoiceAssistant from './VoiceAssistant';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +22,7 @@ const Navbar = () => {
   const [activeNotification, setActiveNotification] = useState(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [yourSpaceModalOpen, setYourSpaceModalOpen] = useState(false);
 
   // Dynamic Notifications States
   const [notifications, setNotifications] = useState(() => {
@@ -133,6 +134,7 @@ const Navbar = () => {
     village: '',
     district: '',
     state: '',
+    profileImage: '',
     categories: [],
     notifications: true,
     orderNotifications: true,
@@ -141,6 +143,115 @@ const Navbar = () => {
   });
   const [editError, setEditError] = useState('');
   const [editLoading, setEditLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUploadSuccess, setImageUploadSuccess] = useState(false);
+
+  const [myAppliedJobs, setMyAppliedJobs] = useState([]);
+  const [myBookedLabours, setMyBookedLabours] = useState([]);
+  const [loadingProfileHistory, setLoadingProfileHistory] = useState(false);
+
+  useEffect(() => {
+    if ((!profileModalOpen && !yourSpaceModalOpen) || !token) return;
+
+    const fetchHistory = async () => {
+      try {
+        setLoadingProfileHistory(true);
+        // Fetch all jobs
+        const jobsRes = await axios.get(`${CONFIG.API_BASE_URL}/api/jobs`);
+        // Filter jobs user applied to
+        const applied = jobsRes.data.filter(job => 
+          job.applicants?.some(app => (app.userId?._id || app.userId)?.toString() === user?._id?.toString())
+        );
+        setMyAppliedJobs(applied);
+
+        // Fetch all labours
+        const labourRes = await axios.get(`${CONFIG.API_BASE_URL}/api/labour`);
+        // Filter bookings user made
+        const booked = [];
+        labourRes.data.forEach(worker => {
+          worker.serviceRequests?.forEach(req => {
+            if ((req.requesterId?._id || req.requesterId)?.toString() === user?._id?.toString()) {
+              booked.push({
+                workerId: worker._id,
+                workerName: worker.name,
+                skill: worker.skill,
+                requestId: req._id,
+                status: req.status,
+                dateTime: req.dateTime,
+                offerAmount: req.offerAmount,
+                contactNumber: worker.contactNumber
+              });
+            }
+          });
+        });
+        setMyBookedLabours(booked);
+      } catch (err) {
+        console.error("Failed to load history:", err);
+      } finally {
+        setLoadingProfileHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, [profileModalOpen, yourSpaceModalOpen, token, user?._id]);
+
+  const handleCancelJobApplication = async (jobId) => {
+    if (!window.confirm(locale === 'hi' ? 'क्या आप इस नौकरी के आवेदन को रद्द करना चाहते हैं?' : 'Are you sure you want to withdraw this job application?')) return;
+    try {
+      await axios.post(`${CONFIG.API_BASE_URL}/api/jobs/${jobId}/cancel-apply`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyAppliedJobs(prev => prev.filter(j => j._id !== jobId));
+      alert(locale === 'hi' ? 'आवेदन रद्द कर दिया गया।' : 'Application withdrawn successfully.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel application.');
+    }
+  };
+
+  const handleCancelLabourBooking = async (workerId, requestId) => {
+    if (!window.confirm(locale === 'hi' ? 'क्या आप इस श्रमिक बुकिंग को रद्द करना चाहते हैं?' : 'Are you sure you want to cancel this booking request?')) return;
+    try {
+      await axios.delete(`${CONFIG.API_BASE_URL}/api/labour/requests/${workerId}/${requestId}/cancel`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyBookedLabours(prev => prev.filter(b => b.requestId !== requestId));
+      alert(locale === 'hi' ? 'बुकिंग रद्द कर दी गई।' : 'Booking cancelled successfully.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel booking.');
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setEditError(locale === 'hi' ? 'छवि का आकार 5MB से कम होना चाहिए।' : 'Image size must be less than 5MB.');
+      return;
+    }
+
+    const data = new FormData();
+    data.append('image', file);
+
+    setUploadingImage(true);
+    setImageUploadSuccess(false);
+    setEditError('');
+
+    try {
+      const res = await axios.post(`${CONFIG.API_BASE_URL}/api/auth/upload-profile`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setEditForm(prev => ({ ...prev, profileImage: res.data.imageUrl }));
+      setImageUploadSuccess(true);
+    } catch (err) {
+      console.error("Upload error details:", err.response?.data || err.message);
+      setEditError(err.response?.data?.message || (locale === 'hi' ? 'छवि अपलोड करने में विफल।' : 'Failed to upload image.'));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleEditProfileSubmit = async (e) => {
     e.preventDefault();
@@ -174,6 +285,7 @@ const Navbar = () => {
       village: user?.village || '',
       district: user?.district || '',
       state: user?.state || '',
+      profileImage: user?.profileImage || '',
       categories: user?.categories || [],
       notifications: user?.notifications !== false,
       orderNotifications: user?.orderNotifications !== false,
@@ -460,7 +572,11 @@ const Navbar = () => {
               <p className="text-sm font-semibold text-gray-800">{user?.fullName || user?.name || "User"}</p>
               <p className="text-xs text-gray-500 capitalize">{t(`categories.${userCategories[0]}`) || userCategories[0] || "Villager"}</p>
             </div>
-            <UserCircle className="w-8 h-8 text-village-emerald" />
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt={user.fullName} className="w-8 h-8 rounded-full object-cover border border-village-mint/20 shadow-sm" />
+            ) : (
+              <UserCircle className="w-8 h-8 text-village-emerald" />
+            )}
           </div>
 
           <AnimatePresence>
@@ -494,6 +610,18 @@ const Navbar = () => {
                 >
                   <UserCircle className="w-4 h-4 text-village-emerald animate-pulse-hover" />
                   {locale === 'en' ? 'My Profile' : 'मेरी प्रोफाइल'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileDropdownOpen(false);
+                    setYourSpaceModalOpen(true);
+                  }}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-emerald-50/60 hover:text-emerald-800 transition-all duration-200 w-full text-left cursor-pointer border-0 bg-transparent"
+                >
+                  <Briefcase className="w-4 h-4 text-emerald-500 animate-pulse-hover" />
+                  {locale === 'en' ? 'Your Space' : 'आपका स्पेस'}
                 </button>
 
                 <Link
@@ -684,8 +812,12 @@ const Navbar = () => {
                 <>
                   <div className="flex flex-col items-center mt-2">
                     {/* Big Avatar */}
-                    <div className="w-20 h-20 bg-village-lightMint/50 rounded-full flex items-center justify-center border border-village-mint/20 mb-3 animate-pulse-hover">
-                      <UserCircle className="w-14 h-14 text-village-emerald" />
+                    <div className="w-20 h-20 bg-village-lightMint/50 rounded-full flex items-center justify-center border border-village-mint/20 mb-3 animate-pulse-hover overflow-hidden">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt={user.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <UserCircle className="w-14 h-14 text-village-emerald" />
+                      )}
                     </div>
                     <h3 className="text-xl font-bold text-gray-800">{user?.fullName || user?.name || "User"}</h3>
                     <div className="flex flex-wrap gap-1.5 justify-center mt-1">
@@ -778,6 +910,77 @@ const Navbar = () => {
                   </div>
 
                   <div className="space-y-3.5 max-h-[360px] overflow-y-auto pr-1">
+                    {/* Profile Image (Browse & Paste URL) */}
+                    <div className="bg-[#f7fcf9] border border-gray-150 p-4 rounded-2xl space-y-3 shadow-sm">
+                      <label className="text-xs font-bold text-gray-700 block">{locale === 'hi' ? 'प्रोफ़ाइल छवि' : 'Profile Image'}</label>
+                      
+                      <div className="flex items-center gap-4">
+                        {/* Image Preview / Browse Button */}
+                        <div className="relative group shrink-0">
+                          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-[#48b475] hover:border-[#3d9c63] flex items-center justify-center bg-white cursor-pointer transition-all shadow-inner relative">
+                            {editForm.profileImage ? (
+                              <img 
+                                src={editForm.profileImage} 
+                                alt="Preview" 
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center text-gray-400 group-hover:text-[#48b475] transition-colors">
+                                <Camera className="w-6 h-6 mb-0.5" />
+                                <span className="text-[8px] font-bold uppercase">{locale === 'hi' ? 'ब्राउज़' : 'Browse'}</span>
+                              </div>
+                            )}
+                            {/* Hover overlay to change image */}
+                            {editForm.profileImage && (
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                                {locale === 'hi' ? 'बदलें' : 'Change'}
+                              </div>
+                            )}
+                          </div>
+                          <input 
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            disabled={uploadingImage}
+                          />
+                        </div>
+
+                        {/* Upload Status / Paste URL Input */}
+                        <div className="flex-1 min-w-0 space-y-2">
+                          {uploadingImage ? (
+                            <div className="flex items-center gap-1.5 text-[#48b475] text-xs font-bold">
+                              <span className="w-3.5 h-3.5 border-2 border-[#48b475] border-t-transparent rounded-full animate-spin"></span>
+                              <span className="truncate">{locale === 'hi' ? 'अपलोड हो रहा है...' : 'Uploading...'}</span>
+                            </div>
+                          ) : imageUploadSuccess ? (
+                            <div className="text-green-600 text-xs font-bold">
+                              ✓ {locale === 'hi' ? 'सफलतापूर्वक अपलोड!' : 'Uploaded successfully!'}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-gray-500">
+                              {locale === 'hi' ? 'छवि चुनें (JPG/PNG, अधिकतम 5MB)' : 'Select image (JPG/PNG, max 5MB)'}
+                            </p>
+                          )}
+
+                          <div className="relative flex items-center border border-gray-200 bg-white rounded-xl px-3 py-1.5 focus-within:ring-1 focus-within:ring-[#48b475] transition-all">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase mr-1.5">{locale === 'hi' ? 'या URL:' : 'Or URL:'}</span>
+                            <input 
+                              type="text"
+                              value={editForm.profileImage || ''}
+                              onChange={e => {
+                                setEditForm({...editForm, profileImage: e.target.value});
+                                setImageUploadSuccess(false);
+                              }}
+                              placeholder={locale === 'hi' ? 'छवि का URL यहाँ पेस्ट करें...' : 'Paste profile image URL here...'}
+                              className="w-full text-xs outline-none bg-transparent text-gray-800 placeholder-gray-400 font-semibold"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Name */}
                     <div>
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">{locale === 'en' ? 'Full Name' : 'पूरा नाम'}</label>
@@ -998,6 +1201,145 @@ const Navbar = () => {
                   </div>
                 </form>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Your Space Modal */}
+      <AnimatePresence>
+        {yourSpaceModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setYourSpaceModalOpen(false)}
+              className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+            />
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-[32px] shadow-2xl border border-gray-105 max-w-lg w-full p-6 z-[60] relative flex flex-col max-h-[85vh] text-left"
+            >
+              {/* Header Pattern decoration */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 to-teal-550" />
+
+              {/* Close Button */}
+              <button
+                onClick={() => setYourSpaceModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-605 p-1 hover:bg-gray-50 rounded-lg transition-colors border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="text-center mb-5 mt-2">
+                <h3 className="text-lg font-black text-gray-800 font-sans">{locale === 'hi' ? 'आपका स्पेस' : 'Your Space'}</h3>
+                <p className="text-xs text-gray-500 font-sans mt-0.5">{locale === 'hi' ? 'अपने सक्रिय आवेदनों और बुकिंग की निगरानी करें' : 'Monitor your active applications and bookings'}</p>
+              </div>
+
+              <div className="overflow-y-auto pr-1 flex-1 space-y-6 custom-scrollbar">
+                {/* Applied Jobs History */}
+                <div className="space-y-2.5">
+                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide flex items-center gap-1.5 font-sans">
+                    💼 {locale === 'en' ? 'Applied Jobs' : 'आवेदन की गई नौकरियां'}
+                    <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{myAppliedJobs.length}</span>
+                  </h4>
+                  {loadingProfileHistory ? (
+                    <div className="text-center py-4 text-xs text-gray-450 animate-pulse">{locale === 'en' ? 'Loading application history...' : 'इतिहास लोड हो रहा है...'}</div>
+                  ) : myAppliedJobs.length === 0 ? (
+                    <p className="text-[11px] text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 font-sans">
+                      {locale === 'en' ? 'No job applications yet.' : 'अभी तक कोई नौकरी के लिए आवेदन नहीं है।'}
+                    </p>
+                  ) : (
+                    <div className="space-y-2 pr-1">
+                      {myAppliedJobs.map(job => (
+                        <div key={job._id} className="p-3.5 bg-gray-50 border border-gray-150 rounded-2xl flex items-center justify-between gap-3 text-xs font-sans hover:bg-gray-100/60 transition-colors">
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="font-bold text-gray-800 truncate">{job.title}</p>
+                            <p className="text-[10px] text-gray-400 truncate mt-0.5">{job.company} — {job.village || 'Nearby'}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                              job.applicants?.find(a => (a.userId?._id || a.userId)?.toString() === user?._id?.toString())?.status === 'hired'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {job.applicants?.find(a => (a.userId?._id || a.userId)?.toString() === user?._id?.toString())?.status || 'applied'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelJobApplication(job._id)}
+                              className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors border-0 cursor-pointer font-bold flex items-center justify-center gap-1 text-[10px]"
+                              title={locale === 'en' ? 'Withdraw Application' : 'आवेदन रद्द करें'}
+                            >
+                              <X className="w-3 h-3" /> {locale === 'en' ? 'Cancel' : 'रद्द करें'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Booked Labours History */}
+                <div className="space-y-2.5 pt-4 border-t border-gray-100 pb-2">
+                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide flex items-center gap-1.5 font-sans">
+                    🛠️ {locale === 'en' ? 'Booked Labour Services' : 'बुक की गई श्रम सेवाएं'}
+                    <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{myBookedLabours.length}</span>
+                  </h4>
+                  {loadingProfileHistory ? (
+                    <div className="text-center py-4 text-xs text-gray-450 animate-pulse">{locale === 'en' ? 'Loading booking history...' : 'इतिहास लोड हो रहा है...'}</div>
+                  ) : myBookedLabours.length === 0 ? (
+                    <p className="text-[11px] text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 font-sans">
+                      {locale === 'en' ? 'No bookings yet.' : 'अभी तक कोई बुकिंग नहीं है।'}
+                    </p>
+                  ) : (
+                    <div className="space-y-2 pr-1 font-sans">
+                      {myBookedLabours.map(booking => (
+                        <div key={booking.requestId} className="p-3.5 bg-gray-50 border border-gray-150 rounded-2xl flex items-center justify-between gap-3 text-xs hover:bg-gray-100/60 transition-colors">
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="font-bold text-gray-800 truncate">{booking.workerName}</p>
+                            <p className="text-[10px] text-gray-400 capitalize mt-0.5">{t(`labour.skills.${booking.skill}`) || booking.skill} — {booking.contactNumber}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                              booking.status === 'accepted'
+                                ? 'bg-green-100 text-green-700'
+                                : booking.status === 'rejected'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {booking.status}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelLabourBooking(booking.workerId, booking.requestId)}
+                              className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors border-0 cursor-pointer font-bold flex items-center justify-center gap-1 text-[10px]"
+                              title={locale === 'en' ? 'Cancel Booking' : 'बुकिंग रद्द करें'}
+                            >
+                              <X className="w-3 h-3" /> {locale === 'en' ? 'Cancel' : 'रद्द करें'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setYourSpaceModalOpen(false)}
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold text-xs transition-colors cursor-pointer border-0 text-center font-sans"
+                >
+                  {locale === 'en' ? 'Close' : 'बंद करें'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
