@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerUser, loginUser, getUserProfile, getVillageReportController, updateUserProfile, getGlobalStats } from '../controllers/authController.js';
+import { registerUser, loginUser, getUserProfile, getVillageReportController, updateUserProfile, getGlobalStats, getVillageFacilities } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import profileUpload from '../middleware/profileUploadMiddleware.js';
 
@@ -11,6 +11,8 @@ router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
 router.get('/village-report', protect, getVillageReportController);
 router.get('/global-stats', protect, getGlobalStats);
+router.get('/facilities', protect, getVillageFacilities);
+
 
 // Public route for profile image upload during registration or profile edit before login
 router.post('/upload-profile', profileUpload.single('image'), (req, res) => {

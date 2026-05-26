@@ -1,7 +1,7 @@
+import './load-env.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import connectDB from './config/db.js';
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import http from 'http';
@@ -18,8 +18,6 @@ import healthRoutes from './routes/healthRoutes.js';
 import educationRoutes from './routes/educationRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
-
-dotenv.config();
 
 const app = express();
 import { setupSocket } from './sockets/chatSocket.js';

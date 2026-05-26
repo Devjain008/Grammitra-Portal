@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { CONFIG } from '../utils/constants';
@@ -9,28 +9,57 @@ export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
-  const { user } = useAuth(); // Only connect if user is logged in
+  const socketRef = useRef(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      // Initialize the connection to your backend
-      const newSocket = io(CONFIG.SOCKET_URL, {
-        query: { userId: user._id } // Pass user ID for private messaging later
-      });
-
-      setSocket(newSocket);
-
-      // Cleanup on logout or unmount
-      return () => newSocket.close();
-    } else {
-      if (socket) socket.close();
+    // Cleanup any existing socket before creating a new one
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
       setSocket(null);
     }
-  }, [user]);
+
+    if (!user?._id) return;
+
+    // Start with polling first, then upgrade to WebSocket AFTER handshake
+    // This prevents "WebSocket closed before connection established" error
+    const newSocket = io(CONFIG.SOCKET_URL, {
+      query: { userId: user._id },
+      transports: ['polling', 'websocket'], // polling first, upgrade after handshake
+      upgrade: true,                         // allow upgrade to websocket after handshake
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 10000,
+      forceNew: true,
+    });
+
+    // Suppress noisy errors in console
+    newSocket.on('connect_error', (err) => {
+      console.warn('[Socket] Connection error:', err.message);
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      if (reason === 'io server disconnect') {
+        // Server disconnected us, reconnect manually
+        newSocket.connect();
+      }
+    });
+
+    socketRef.current = newSocket;
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user?._id]);
 
   return (
     <SocketContext.Provider value={socket}>
       {children}
     </SocketContext.Provider>
   );
-};
+};

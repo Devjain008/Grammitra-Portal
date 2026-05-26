@@ -19,21 +19,20 @@ import { useNavigate } from 'react-router-dom';
 
   const renderAvatarBubbles = (list, isShop = false, isEn = true) => {
     const listToUse = list || [];
-    if (listToUse.length === 0) {
+    const total = listToUse.length;
+    const remainingCount = Math.max(0, total - 3);
+
+    if (total === 0) {
       return (
-        <div className="flex items-center gap-1.5 py-2 text-left">
-          <div className="flex -space-x-2.5 overflow-hidden">
-            <img className="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover bg-gray-50 shrink-0" src={getDefaultAvatar('other')} alt="avatar" />
-            <img className="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover bg-gray-50 shrink-0" src={getDefaultAvatar('other')} alt="avatar" />
-          </div>
-          <span className="text-xs text-gray-450 font-semibold ml-1">
-            +0 {isEn ? 'more' : 'और'}
+        <div className="py-2 text-left min-h-[40px] flex items-center">
+          <span className="text-xs text-gray-400 font-semibold italic">
+            {isEn ? 'None registered yet' : 'अभी कोई पंजीकृत नहीं है'}
           </span>
         </div>
       );
     }
     return (
-      <div className="flex items-center gap-1.5 py-2 text-left">
+      <div className="flex items-center gap-2 py-2 text-left min-h-[40px]">
         <div className="flex -space-x-2.5 overflow-hidden">
           {listToUse.slice(0, 3).map((item, idx) => {
             const gender = item.gender || item.userId?.gender;
@@ -48,12 +47,19 @@ import { useNavigate } from 'react-router-dom';
             );
           })}
         </div>
-        <span className="text-xs text-gray-450 font-semibold ml-1">
-          + {Math.max(0, listToUse.length - 3)} {isEn ? 'more' : 'और'}
+        <span className="text-xs text-gray-500 font-bold ml-1">
+          {remainingCount > 0
+            ? `${total} + ${remainingCount}+`
+            : `${total}+`
+          }
         </span>
       </div>
     );
   };
+
+
+
+
 
 const StatCard = ({ icon: Icon, iconBg, iconColor, label, value, delay = 0, onClick }) => (
   <motion.div
@@ -173,6 +179,33 @@ const Dashboard = () => {
   const [dirError, setDirError] = useState('');
   const [showShopsModal, setShowShopsModal] = useState(false);
   const [showLabourModal, setShowLabourModal] = useState(false);
+
+  // ── INFRASTRUCTURE FACILITIES STATES ──
+  const [showFacilitiesModal, setShowFacilitiesModal] = useState(false);
+  const [loadingFacilities, setLoadingFacilities] = useState(false);
+  const [facilitiesError, setFacilitiesError] = useState('');
+  const [selectedFacilityType, setSelectedFacilityType] = useState('school'); // 'school', 'hospital', 'college'
+  const [facilitiesList, setFacilitiesList] = useState([]);
+
+  const handleFacilityClick = async (type) => {
+    try {
+      setSelectedFacilityType(type);
+      setShowFacilitiesModal(true);
+      setLoadingFacilities(true);
+      setFacilitiesError('');
+      
+      const res = await axios.get(`${CONFIG.API_BASE_URL}/api/auth/facilities?type=${type}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setFacilitiesList(res.data);
+    } catch (err) {
+      setFacilitiesError(err.response?.data?.message || (isEn ? 'Failed to fetch facilities.' : 'सुविधाओं की जानकारी प्राप्त करने में विफल।'));
+    } finally {
+      setLoadingFacilities(false);
+    }
+  };
+
 
   // ── LOCAL DIRECTORY EXPANDABLE/CONTACT STATES ──
   const [expandedTeacherId, setExpandedTeacherId] = useState(null);
@@ -344,9 +377,10 @@ const Dashboard = () => {
   /* ── Infrastructure items config ── */
   const infraItems = report
     ? [
-        { icon: Building,      iconBg: 'bg-red-50',      iconColor: 'text-red-500',     label: isEn ? 'Hospitals' : 'अस्पताल',                value: report.hospitals,           isFacility: true },
-        { icon: School,        iconBg: 'bg-blue-50',     iconColor: 'text-blue-500',    label: isEn ? 'Schools' : 'स्कूल',                     value: report.schools,             isFacility: true },
-        { icon: GraduationCap, iconBg: 'bg-indigo-50',   iconColor: 'text-indigo-500',  label: isEn ? 'Colleges' : 'कॉलेज',                    value: report.colleges,            isFacility: true },
+        { icon: Building,      iconBg: 'bg-red-50',      iconColor: 'text-red-500',     label: isEn ? 'Hospitals' : 'अस्पताल',                value: report.hospitals || 0,           isFacility: true, onClick: () => handleFacilityClick('hospital') },
+        { icon: School,        iconBg: 'bg-blue-50',     iconColor: 'text-blue-500',    label: isEn ? 'Schools' : 'स्कूल',                     value: report.schools || 0,             isFacility: true, onClick: () => handleFacilityClick('school') },
+        { icon: GraduationCap, iconBg: 'bg-indigo-50',   iconColor: 'text-indigo-500',  label: isEn ? 'Colleges' : 'कॉलेज',                    value: report.colleges || 0,            isFacility: true, onClick: () => handleFacilityClick('college') },
+
         { icon: BookOpen,      iconBg: 'bg-emerald-50',  iconColor: 'text-emerald-600', label: isEn ? 'Village Teachers' : 'ग्राम शिक्षक',     value: report.totalTeachers || 0,  onClick: () => setShowTeachersModal(true) },
         { icon: Store,         iconBg: 'bg-violet-50',   iconColor: 'text-violet-500',  label: isEn ? 'Total Shops' : 'कुल दुकानें',            value: report.totalShops,          onClick: () => navigate(`/marketplace?village=${encodeURIComponent(user.village)}`) },
         { icon: TrendingUp,    iconBg: 'bg-pink-50',     iconColor: 'text-pink-500',    label: isEn ? 'Local Products' : 'स्थानीय उत्पाद',      value: report.localProducts || 0,  onClick: () => navigate(`/marketplace?village=${encodeURIComponent(user.village)}`) },
@@ -646,11 +680,8 @@ const Dashboard = () => {
                               <BookOpen className="w-6 h-6 text-emerald-600" />
                             </div>
                             <div>
-                              <h3 className="font-extrabold text-gray-800 text-sm leading-tight flex items-center gap-1.5">
+                              <h3 className="font-extrabold text-gray-800 text-sm leading-tight">
                                 {isEn ? 'Teachers' : 'शिक्षक'}
-                                <span className="bg-emerald-50 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">
-                                  {dirTeachers.length}
-                                </span>
                               </h3>
                               <p className="text-xs text-gray-400 mt-1 leading-snug">{isEn ? 'Local teachers and tuitions' : 'स्थानीय शिक्षक और ट्यूशन'}</p>
                             </div>
@@ -690,11 +721,8 @@ const Dashboard = () => {
                               <Store className="w-6 h-6 text-indigo-600" />
                             </div>
                             <div>
-                              <h3 className="font-extrabold text-gray-800 text-sm leading-tight flex items-center gap-1.5">
+                              <h3 className="font-extrabold text-gray-800 text-sm leading-tight">
                                 {isEn ? 'Shops & Products' : 'दुकानें और उत्पाद'}
-                                <span className="bg-indigo-50 text-indigo-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">
-                                  {dirShops.length}
-                                </span>
                               </h3>
                               <p className="text-xs text-gray-400 mt-1 leading-snug">{isEn ? 'Local shops and available products' : 'स्थानीय दुकानें और उपलब्ध उत्पाद'}</p>
                             </div>
@@ -734,11 +762,8 @@ const Dashboard = () => {
                               <Wrench className="w-6 h-6 text-teal-600" />
                             </div>
                             <div>
-                              <h3 className="font-extrabold text-gray-800 text-sm leading-tight flex items-center gap-1.5">
+                              <h3 className="font-extrabold text-gray-800 text-sm leading-tight">
                                 {isEn ? 'Labour Services' : 'श्रमिक सेवाएं'}
-                                <span className="bg-teal-50 text-teal-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">
-                                  {dirLabour.length}
-                                </span>
                               </h3>
                               <p className="text-xs text-gray-400 mt-1 leading-snug">{isEn ? 'Local workers and services' : 'स्थानीय श्रमिक और सेवाएं'}</p>
                             </div>
@@ -781,9 +806,10 @@ const Dashboard = () => {
                   </h3>
                   <div className="mt-4 space-y-4">
                     {[
-                      { title: isEn ? 'Find Jobs' : 'नौकरी खोजें', desc: isEn ? 'Search local work openings' : 'अपने क्षेत्र में नौकरियां खोजें', icon: Briefcase, path: '/employment' },
-                      { title: isEn ? 'Find Labour' : 'श्रमिक खोजें', desc: isEn ? 'Contact local workers' : 'उपलब्ध श्रमिकों से संपर्क करें', icon: Wrench, path: '/labour' },
-                      { title: isEn ? 'Add Your Shop' : 'अपनी दुकान जोड़ें', desc: isEn ? 'Expand your business footprint' : 'अपना व्यवसाय बढ़ाएं', icon: Store, path: '/your-shop' },
+                      { title: isEn ? 'Local Jobs' : 'स्थानीय नौकरियां', desc: isEn ? 'Search local work openings' : 'अपने क्षेत्र में नौकरियां खोजें', icon: Briefcase, path: `/employment?village=${encodeURIComponent(user?.village || '')}` },
+                      { title: isEn ? 'Local Labour' : 'स्थानीय श्रमिक', desc: isEn ? 'Contact local workers' : 'उपलब्ध श्रमिकों से संपर्क करें', icon: Wrench, path: `/labour?village=${encodeURIComponent(user?.village || '')}` },
+                      { title: isEn ? 'Local Shop' : 'स्थानीय दुकान', desc: isEn ? 'Explore local stores & shops' : 'स्थानीय दुकानों की खोज करें', icon: Store, path: `/marketplace?village=${encodeURIComponent(user?.village || '')}` },
+                      { title: isEn ? 'Local Products' : 'स्थानीय उत्पाद', desc: isEn ? 'Browse village production & marketplace' : 'ग्रामीण उत्पादन और बाजार ब्राउज़ करें', icon: TrendingUp, path: `/marketplace?village=${encodeURIComponent(user?.village || '')}` },
                       { title: isEn ? 'Government Schemes' : 'सरकारी योजनाएं', desc: isEn ? 'Browse active welfare programs' : 'योजनाओं की जानकारी पाएं', icon: Landmark, path: '/schemes' }
                     ].map((item, idx) => {
                       const IconComponent = item.icon;
@@ -1335,9 +1361,127 @@ const Dashboard = () => {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Dynamic Facilities Detail Modal */}
+        <AnimatePresence>
+          {showFacilitiesModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/45 backdrop-blur-xs flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-left relative"
+              >
+                {/* Modal Header */}
+                <div className="flex justify-between items-center pb-4 border-b border-gray-100 mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
+                      {selectedFacilityType === 'hospital' ? <Building className="w-5 h-5 text-red-500" /> : selectedFacilityType === 'school' ? <School className="w-5 h-5 text-blue-500" /> : <GraduationCap className="w-5 h-5 text-indigo-500" />}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-gray-800">
+                        {selectedFacilityType === 'hospital' ? (isEn ? 'Local Hospitals' : 'स्थानीय अस्पताल') : selectedFacilityType === 'school' ? (isEn ? 'Local Schools' : 'स्थानीय स्कूल') : (isEn ? 'Local Colleges' : 'स्थानीय कॉलेज')}
+                      </h3>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">
+                        {isEn ? 'Amenities & Public Infrastructure' : 'सुविधाएं और सार्वजनिक बुनियादी ढांचा'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowFacilitiesModal(false)}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-450 hover:text-gray-700 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
+                  {loadingFacilities ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-indigo-650">
+                      <Loader className="animate-spin w-8 h-8 mb-2" />
+                      <p className="text-xs font-semibold animate-pulse">{isEn ? 'Searching nearest facilities...' : 'निकटतम सुविधाओं की खोज जारी है...'}</p>
+                    </div>
+                  ) : facilitiesError ? (
+                    <div className="bg-red-50 border border-red-100 text-red-655 rounded-2xl px-5 py-4 text-xs font-medium text-center flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      {facilitiesError}
+                    </div>
+                  ) : facilitiesList.length === 0 ? (
+                    <div className="p-12 text-center text-gray-450">
+                      <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-2 animate-bounce" />
+                      {isEn ? 'No dynamic facilities found near village.' : 'गाँव के पास कोई सुविधा नहीं मिली।'}
+                    </div>
+                  ) : (
+                    <div className="space-y-3.5">
+                      {facilitiesList.map((f, i) => (
+                        <div key={i} className="p-4 bg-gray-50 border border-gray-150 rounded-2xl flex flex-col justify-between hover:shadow-xs transition-shadow">
+                          <div className="flex justify-between items-start gap-2">
+                            <div>
+                              <p className="text-sm font-black text-gray-800 leading-snug">
+                                {isEn ? f.name : f.nameHi || f.name}
+                              </p>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                <span className={`inline-flex items-center text-[10px] font-black px-2 py-0.5 rounded-lg border ${
+                                  f.type.toLowerCase() === 'government'
+                                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                    : 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                                }`}>
+                                  {isEn ? f.type : f.typeHi || f.type}
+                                </span>
+
+                                {f.medium && (
+                                  <span className="bg-blue-50 border border-blue-100 text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                                    🌐 {isEn ? f.medium : f.mediumHi || f.medium}
+                                  </span>
+                                )}
+
+                                {f.beds && (
+                                  <span className="bg-amber-50 border border-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                                    🛏️ {f.beds} {isEn ? 'Beds Available' : 'बिस्तर उपलब्ध'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <span className="shrink-0 bg-white border border-gray-200 px-2 py-1 rounded-xl text-[10px] font-bold text-gray-500 whitespace-nowrap shadow-3xs">
+                              📍 {f.distance}
+                            </span>
+                          </div>
+
+                          {f.specialty && (
+                            <div className="mt-3 pt-2.5 border-t border-gray-100">
+                              <p className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest leading-none mb-1">
+                                {isEn ? 'Specialties / Departments' : 'विशेषताएं / विभाग'}
+                              </p>
+                              <p className="text-xs font-semibold text-gray-600 leading-snug">
+                                {isEn ? f.specialty : f.specialtyHi || f.specialty}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="pt-4 border-t border-gray-100 mt-5 flex justify-end">
+                  <button
+                    onClick={() => setShowFacilitiesModal(false)}
+                    className="bg-gray-900 hover:bg-black text-white font-bold py-2.5 px-6 rounded-2xl text-xs transition-all shadow-md cursor-pointer border-0 active:scale-[0.98]"
+                  >
+                    {isEn ? 'Close Details' : 'विवरण बंद करें'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
 };
+
 
 export default Dashboard;
