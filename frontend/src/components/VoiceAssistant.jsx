@@ -734,7 +734,7 @@ const VoiceAssistant = () => {
                 </AnimatePresence>
 
                 {/* Collapsible Suggestion Chips Container */}
-                {chatHistory.length <= 1 && !isLoading && (
+                {!isLoading && (
                   <div className="px-4 py-3 border-t border-gray-100 shrink-0 bg-white">
                     {/* Header Toggle */}
                     <button
@@ -748,7 +748,7 @@ const VoiceAssistant = () => {
                       </div>
                       <div className="flex items-center gap-1 text-[9px] lowercase font-normal italic text-gray-400 select-none">
                         <span>{showSuggestions ? (isEn ? 'hide' : 'छिपाएं') : (isEn ? 'show' : 'दिखाएं')}</span>
-                        {showSuggestions ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        {showSuggestions ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                       </div>
                     </button>
                     
@@ -765,8 +765,11 @@ const VoiceAssistant = () => {
                             <button
                               key={idx}
                               type="button"
-                              onClick={() => handleIncomingQuery(sug.text)}
-                              className="text-[10px] font-bold text-gray-600 hover:text-village-emerald bg-gray-50 border border-gray-100 hover:bg-village-lightMint/50 hover:border-village-mint/40 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                              onClick={() => {
+                                handleIncomingQuery(sug.text);
+                                setShowSuggestions(false);
+                              }}
+                              className="text-xs font-semibold text-gray-700 hover:text-village-emerald bg-white/80 border border-gray-100 hover:bg-village-lightMint/60 hover:border-village-emerald/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                             >
                               {sug.icon}
                               <span>{sug.text}</span>
