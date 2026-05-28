@@ -103,7 +103,10 @@ const Login = () => {
                 </div>
                 <input
                   required
+                  id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="your@email.com"
@@ -120,8 +123,11 @@ const Login = () => {
                 </div>
                 <input
                   required
+                  id="mobile"
+                  name="mobile"
                   type="tel"
                   pattern="[0-9]{10}"
+                  autoComplete="tel"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="e.g. 9876543210"
@@ -140,7 +146,10 @@ const Login = () => {
               </div>
               <input
                 required
+                id="password"
+                name="password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -167,6 +176,8 @@ const Login = () => {
           <div className="w-full flex items-center justify-between mt-5 text-xs">
             <label className="flex items-center gap-2 text-gray-600 font-semibold cursor-pointer select-none">
               <input
+                id="rememberMe"
+                name="rememberMe"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}

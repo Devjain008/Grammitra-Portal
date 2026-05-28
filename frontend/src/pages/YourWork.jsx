@@ -367,18 +367,18 @@ const YourWork = () => {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-village-emerald to-village-mint p-8 rounded-3xl text-white shadow-xl flex justify-between items-center">
+      <div className="bg-gradient-to-r from-village-emerald to-village-mint p-6 md:p-8 rounded-3xl text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 mb-2">
-            <Wrench className="w-8 h-8 text-village-lightMint" />
+          <h1 className="text-2xl md:text-4xl font-bold flex items-center gap-3 mb-2">
+            <Wrench className="w-6 h-6 md:w-8 md:h-8 text-village-lightMint" />
             {t('labour.dashboard.title')}
           </h1>
-          <p className="text-village-lightMint text-lg opacity-90">{t('labour.dashboard.sub')}</p>
+          <p className="text-village-lightMint text-sm md:text-lg opacity-90">{t('labour.dashboard.sub')}</p>
         </div>
         {profile && (
           <button 
             onClick={handleToggleAvailability}
-            className={`px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all ${
+            className={`w-fit px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all shrink-0 ${
               profile.isAvailable 
                 ? 'bg-green-500 text-white hover:bg-green-600' 
                 : 'bg-red-500 text-white hover:bg-red-600'

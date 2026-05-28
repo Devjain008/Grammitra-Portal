@@ -753,15 +753,17 @@ const YourShop = () => {
       {/* Business Switcher & Add Button Bar */}
       {businesses.length > 0 && !isRegisteringNew && (
         <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-gray-150 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto text-left">
-            <Store className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <label className="text-sm font-bold text-gray-700 whitespace-nowrap">
-              {t('yourBusiness.selectBusiness')}
-            </label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto text-left">
+            <div className="flex items-center gap-3 shrink-0">
+              <Store className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <label className="text-sm font-bold text-gray-700 whitespace-nowrap">
+                {t('yourBusiness.selectBusiness')}
+              </label>
+            </div>
             <select
               value={selectedBusinessId}
               onChange={(e) => setSelectedBusinessId(e.target.value)}
-              className="flex-1 sm:flex-none p-2.5 rounded-xl bg-gray-50 border border-gray-250 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-450 font-bold text-gray-800"
+              className="w-full sm:w-auto p-2.5 rounded-xl bg-gray-50 border border-gray-250 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-450 font-bold text-gray-800 cursor-pointer"
             >
               {businesses.map((biz) => (
                 <option key={biz._id} value={biz._id}>
@@ -772,7 +774,7 @@ const YourShop = () => {
           </div>
           <button
             onClick={() => setIsRegisteringNew(true)}
-            className="w-full sm:w-auto bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-5 py-2.5 rounded-xl font-bold text-sm transition-all border border-emerald-150 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-5 py-2.5 rounded-xl font-bold text-sm transition-all border border-emerald-150 flex items-center justify-center gap-2 shrink-0"
           >
             <PlusCircle className="w-4 h-4" />
             {t('yourBusiness.registerAnotherBusiness')}

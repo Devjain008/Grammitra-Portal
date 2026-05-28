@@ -807,38 +807,38 @@ const FarmerAI = () => {
       {isFarmer && (
         <div className="space-y-6">
           {/* Tab Switcher */}
-          <div className="flex gap-2 bg-gray-100 p-1.5 rounded-2xl border border-gray-200 w-fit">
+          <div className="flex gap-2 bg-gray-100 p-1.5 rounded-2xl border border-gray-200 w-full overflow-x-auto whitespace-nowrap scrollbar-none">
             <button
               onClick={() => setActiveTab('weather')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-2 shrink-0 whitespace-nowrap ${
                 activeTab === 'weather'
                   ? 'bg-village-emerald text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <CloudSun className="w-4 h-4" />
+              <CloudSun className="w-4 h-4 shrink-0" />
               {t('farmer.tabWeather')}
             </button>
             <button
               onClick={() => setActiveTab('estimator')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-2 shrink-0 whitespace-nowrap ${
                 activeTab === 'estimator'
                   ? 'bg-village-emerald text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <FlaskConical className="w-4 h-4" />
+              <FlaskConical className="w-4 h-4 shrink-0" />
               {t('farmer.tabEstimator')}
             </button>
             <button
               onClick={() => setActiveTab('guide')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-2 shrink-0 whitespace-nowrap ${
                 activeTab === 'guide'
                   ? 'bg-village-emerald text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <Sprout className="w-4 h-4" />
+              <Sprout className="w-4 h-4 shrink-0" />
               {t('farmer.tabGuide')}
             </button>
           </div>

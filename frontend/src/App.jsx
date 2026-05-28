@@ -66,9 +66,9 @@ const AppRoutes = () => {
 };
 
 const AppLayout = ({ children }) => (
-  <div className="min-h-screen bg-village-cream flex">
+  <div className="min-h-screen bg-village-cream">
     <Sidebar />
-    <div className="flex-1 md:ml-72 flex flex-col min-w-0">
+    <div className="w-full md:w-auto md:ml-72 flex flex-col min-w-0 min-h-screen">
       <Navbar />
       <main className="flex-1 pb-24 md:pb-10 pt-5">{children}</main>
     </div>

@@ -379,16 +379,17 @@ export const getVillageFacilities = async (req, res) => {
     const state = req.user.state || '';
     const type = req.query.type; // 'hospital', 'school', 'college'
 
-    if (!type) {
-      return res.status(400).json({ message: 'Type query parameter is required' });
-    }
-
-    // Deterministic fallback list based on village name
+      // Deterministic fallback list based on village name
     let hash = 0;
     for (let i = 0; i < villageName.length; i++) {
       hash = villageName.charCodeAt(i) + ((hash << 5) - hash);
     }
     hash = Math.abs(hash);
+
+    const hospitalsCount = hash % 2; // 0 or 1
+    const schoolsCount = hash % 3;   // 0, 1, or 2
+    const collegesCount = hash % 2;  // 0 or 1
+    const targetCount = type === 'school' ? schoolsCount : type === 'hospital' ? hospitalsCount : collegesCount;
 
     const fallbackFacilities = {
       school: [
@@ -488,7 +489,7 @@ export const getVillageFacilities = async (req, res) => {
 
         if (overpassRes.data && overpassRes.data.elements && overpassRes.data.elements.length > 0) {
           const elements = overpassRes.data.elements;
-          const mapped = elements.slice(0, 5).map((el, index) => {
+          const mapped = elements.map((el, index) => {
             const tags = el.tags || {};
             const operatorType = tags.operator_type || tags.operator || (index % 2 === 0 ? 'Government' : 'Private');
             const isGov = operatorType.toLowerCase().includes('gov') || operatorType.toLowerCase().includes('public');
@@ -506,16 +507,18 @@ export const getVillageFacilities = async (req, res) => {
               distance: `${(1 + index * 1.5).toFixed(1)} km`
             };
           });
-          return res.status(200).json(mapped);
+          const slicedMapped = mapped.slice(0, targetCount);
+          return res.status(200).json(slicedMapped);
         }
       }
     } catch (apiError) {
       console.warn("Overpass API failed, using high-quality deterministic fallback lists", apiError.message);
     }
 
-    // Reaching here means we use fallback
+    // Reaching here means we use fallback sliced exactly to targetCount
     const list = fallbackFacilities[type] || [];
-    return res.status(200).json(list);
+    const slicedList = list.slice(0, targetCount);
+    return res.status(200).json(slicedList);
 
   } catch (error) {
     res.status(500).json({ message: error.message });

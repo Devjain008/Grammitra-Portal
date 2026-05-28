@@ -222,7 +222,7 @@ const MessageContent = ({ msg, isMe }) => {
       );
 
     default:
-      return <span className="leading-relaxed whitespace-pre-wrap break-words">{msg.content}</span>;
+      return <span className="leading-relaxed whitespace-pre-wrap break-words break-all">{msg.content}</span>;
   }
 };
 
@@ -1067,7 +1067,7 @@ const Chat = () => {
                               </div>
                             )}
 
-                            <div className={`relative rounded-2xl px-3.5 py-2.5 shadow-sm text-sm ${isMe ? 'bg-teal-600 text-white rounded-br-sm' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm'}`}>
+                            <div className={`relative rounded-2xl px-3.5 py-2.5 shadow-sm text-sm break-words break-all ${isMe ? 'bg-teal-600 text-white rounded-br-sm' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm'}`}>
                               <MessageContent msg={msg} isMe={isMe} />
                               <span className={`block text-[9px] mt-1 text-right ${isMe ? 'text-teal-200' : 'text-gray-400'}`}>
                                 {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

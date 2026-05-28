@@ -692,22 +692,22 @@ const TeacherDashboard = ({ user, token, isEn, navigate, updateUser }) => {
       <AnimatePresence>{toast && <Toast {...toast} onClose={clear} />}</AnimatePresence>
 
       {/* ── Teacher Header ── */}
-      <div className="relative overflow-hidden rounded-3xl p-8 text-white"
+      <div className="relative overflow-hidden rounded-3xl p-6 md:p-8 text-white"
         style={{ background: 'linear-gradient(135deg,#ea580c 0%,#f97316 50%,#fbbf24 100%)' }}>
         <div className="relative z-10">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
                 <GraduationCap className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-black">{isEn ? 'Teacher Dashboard' : 'शिक्षक डैशबोर्ड'}</h2>
+                <h2 className="text-xl md:text-2xl font-black">{isEn ? 'Teacher Dashboard' : 'शिक्षक डैशबोर्ड'}</h2>
                 <p className="text-orange-100 text-sm">{user?.fullName}</p>
               </div>
             </div>
             <button
               onClick={() => setShowCreateBatch(true)}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm px-5 py-2.5 rounded-2xl text-sm font-bold border-0 cursor-pointer transition-all">
+              className="w-fit flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm px-5 py-2.5 rounded-2xl text-sm font-bold border-0 cursor-pointer transition-all shrink-0">
               <Plus className="w-4 h-4" />
               {isEn ? 'Create Batch' : 'बैच बनाएं'}
             </button>
