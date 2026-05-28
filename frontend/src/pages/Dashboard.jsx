@@ -390,6 +390,45 @@ const Dashboard = () => {
                 <StatCard icon={Sprout}     iconBg="bg-emerald-50"  iconColor="text-emerald-600" label={isEn ? 'Total Farmers' : 'कुल किसान'}        value={(globalStats.totalFarmers  || 0).toLocaleString()} delay={0.16} onClick={() => navigate('/farmer-ai')} />
               </div>
             </motion.section>
+
+            {/* Set Village Banner */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="mt-6 p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-emerald-800 to-teal-900 text-white shadow-xl relative overflow-hidden border border-emerald-700/30 flex flex-col md:flex-row items-center justify-between gap-6"
+            >
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-24 h-24 bg-teal-400/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left z-10">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-700/40 flex items-center justify-center shrink-0 border border-emerald-600/30 shadow-inner">
+                  <MapPin className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-300 animate-pulse" />
+                </div>
+                <div className="space-y-1 max-w-xl">
+                  <h3 className="text-lg sm:text-xl font-black tracking-tight text-emerald-100">
+                    {isEn ? 'Unlock Your Village Portal' : 'अपने गाँव के पोर्टल को अनलॉक करें'}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-emerald-200/90 leading-relaxed font-medium">
+                    {isEn
+                      ? 'Set your village in your profile to view localized weather updates, village infrastructure reports, local directory, market businesses, and more!'
+                      : 'स्थानीय मौसम अपडेट, ग्राम बुनियादी ढांचा रिपोर्ट, स्थानीय निर्देशिका, बाजार व्यवसायों आदि को देखने के लिए अपनी प्रोफ़ाइल में अपना गाँव सेट करें!'}
+                  </p>
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.03, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/profile')}
+                className="shrink-0 bg-white hover:bg-emerald-50 text-emerald-950 font-black text-xs sm:text-sm px-6 py-3 rounded-xl flex items-center gap-2 group transition-colors duration-250 z-10 shadow-md"
+              >
+                <span>{isEn ? 'Complete Profile' : 'प्रोफ़ाइल पूरी करें'}</span>
+                <ChevronRight className="w-4 h-4 text-emerald-900 group-hover:translate-x-0.5 transition-transform duration-200" />
+              </motion.button>
+            </motion.div>
+
             <div className="border-t border-dashed border-gray-200" />
           </>
         )}

@@ -702,7 +702,9 @@ const FarmerAI = () => {
   const fetchWeather = async () => {
     setLoadingWeather(true);
     try {
-      const res = await axios.get(`${CONFIG.API_BASE_URL}/api/farmer/weather?village=Gwalior`);
+      // Use user's real location — village → district → state → fallback
+      const locationQuery = user?.village || user?.district || user?.state || 'Delhi';
+      const res = await axios.get(`${CONFIG.API_BASE_URL}/api/farmer/weather?village=${encodeURIComponent(locationQuery)}`);
       setWeatherData(res.data);
     } catch (error) {
       console.error("Weather fetch error", error);
@@ -773,7 +775,7 @@ const FarmerAI = () => {
 
   useEffect(() => {
     fetchWeather();
-  }, []);
+  }, [user?.village, user?.district]);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
