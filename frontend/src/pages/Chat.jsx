@@ -35,6 +35,7 @@ const Avatar = ({ src, name, size = 'md', className = '' }) => {
 
 /* ─────────── Helper: format duration mm:ss ─────────── */
 const fmtDur = (sec) => {
+  if (!sec || isNaN(sec) || !isFinite(sec)) return '0:00';
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
@@ -121,8 +122,27 @@ const AudioPlayer = ({ src, isVoice = false, isMe = false }) => {
   return (
     <div className={`flex items-center gap-2 min-w-[160px] max-w-[220px] ${isMe ? '' : ''}`}>
       <audio ref={audioRef} src={src}
-        onTimeUpdate={() => setCurrent(audioRef.current?.currentTime || 0)}
-        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+        onTimeUpdate={() => {
+          const audio = audioRef.current;
+          if (audio && audio.currentTime < 99999) {
+            setCurrent(audio.currentTime);
+          }
+        }}
+        onLoadedMetadata={() => {
+          const audio = audioRef.current;
+          if (!audio) return;
+          if (audio.duration === Infinity) {
+            // Chrome WebM duration bug workaround: seek to the end to force browser to parse metadata
+            audio.currentTime = 1e9;
+            audio.ontimeupdate = () => {
+              audio.ontimeupdate = null; // Unbind immediately
+              setDuration(audio.duration || 0);
+              audio.currentTime = 0; // Reset back to start
+            };
+          } else {
+            setDuration(audio.duration || 0);
+          }
+        }}
         onEnded={() => { setPlaying(false); setCurrent(0); }}
       />
       <button onClick={toggle}
@@ -764,6 +784,15 @@ const Chat = () => {
   const handleStartChatWithFoundUser = async () => {
     if (!findUserResult) return;
     if (findUserResult._id === user._id) { alert(locale === 'hi' ? 'आप खुद से चैट नहीं कर सकते।' : "You can't chat with yourself."); return; }
+    
+    // Prevent direct chat initiation with the System Admin
+    if (findUserResult.role === 'admin' && user.role !== 'admin') {
+      alert(locale === 'hi'
+        ? 'सिस्टम एडमिन के साथ डायरेक्ट चैट करने की अनुमति नहीं है।'
+        : 'Direct chat with the System Admin is not allowed.');
+      return;
+    }
+
     setFindUserChatLoading(true);
     try {
       const res = await axios.post(`${BASE}/api/chat/room`, { userId2: findUserResult._id }, { headers: authHeader });

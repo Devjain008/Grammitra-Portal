@@ -991,11 +991,11 @@ const TeacherDashboard = ({ user, token, isEn, navigate, updateUser }) => {
                       <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-4">
                         <p className="text-xs font-black text-orange-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                           <UserPlus className="w-3.5 h-3.5" />
-                          {isEn ? 'Add Student by Email' : 'ईमेल से छात्र जोड़ें'}
+                          {isEn ? 'Add Students by Gmail or Mobile No (Batch)' : 'Gmail या मोबाइल नंबर से छात्र जोड़ें (बैच में)'}
                         </p>
                         <form onSubmit={addStudent} className="flex gap-2">
-                          <input type="email" required
-                            placeholder={isEn ? 'Enter student Gmail address...' : 'छात्र की Gmail ID दर्ज करें...'}
+                          <input type="text" required
+                            placeholder={isEn ? 'e.g. student@gmail.com, 9876543210, student2@gmail.com' : 'जैसे student@gmail.com, 9876543210, student2@gmail.com'}
                             value={addStudentEmail} onChange={e => setAddStudentEmail(e.target.value)}
                             className="flex-1 text-sm border border-orange-200 bg-white rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-400 font-semibold" />
                           <button type="submit" disabled={addingStudent}

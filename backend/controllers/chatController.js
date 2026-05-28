@@ -17,6 +17,15 @@ export const accessChatRoom = async (req, res) => {
       return res.status(400).json({ message: 'Other participant user ID (userId2) is required.' });
     }
 
+    // Block direct chat creation with System Admin
+    const targetUser = await User.findById(userId2);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'Target user not found.' });
+    }
+    if (targetUser.role === 'admin' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Chatting with the System Admin is not allowed.' });
+    }
+
     // Check if a direct room already exists
     let room = await ChatRoom.findOne({
       roomType: 'direct',

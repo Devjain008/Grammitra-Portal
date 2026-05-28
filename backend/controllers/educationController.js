@@ -233,40 +233,118 @@ export const getBatchDetails = async (req, res) => {
   }
 };
 
-// @desc    Add student to batch by email
+// @desc    Add student to batch by Gmail/email or Mobile number (supports comma-separated batches/bulk)
 // @route   POST /api/education/batches/:batchId/add-student
 // @access  Private (Teacher)
 export const addStudentToBatch = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email is required.' });
+    const { email } = req.body; // Can be a single item or comma-separated batch list
+    if (!email || email.trim() === '') {
+      return res.status(400).json({ message: 'Please provide Gmail addresses or mobile numbers.' });
+    }
 
     const batch = await Batch.findById(req.params.batchId);
     if (!batch) return res.status(404).json({ message: 'Batch not found.' });
     if (batch.teacherId.toString() !== req.user._id.toString())
       return res.status(403).json({ message: 'Access denied.' });
 
-    const student = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!student) return res.status(404).json({ message: 'No user found with that email.' });
+    // 1. Parse comma-separated, semicolon-separated, or space-separated batch items
+    const items = email.split(/[\s,;\n\r]+/).map(item => item.trim()).filter(Boolean);
+    if (items.length === 0) {
+      return res.status(400).json({ message: 'No valid Gmail addresses or mobile numbers found in inputs.' });
+    }
 
-    const alreadyIn = batch.students.some(s => s.userId.toString() === student._id.toString());
-    if (alreadyIn) return res.status(400).json({ message: 'Student is already in this batch.' });
-
-    batch.students.push({
-      userId: student._id,
-      email: student.email,
-      fullName: student.fullName,
+    // 2. Separate into emails and mobiles
+    const emails = [];
+    const mobiles = [];
+    items.forEach(item => {
+      if (item.includes('@')) {
+        emails.push(item.toLowerCase());
+      } else {
+        // Strip any country prefix or non-numeric characters for simple mobile matches
+        const cleanMobile = item.replace(/\D/g, '');
+        if (cleanMobile.length >= 10) {
+          mobiles.push(cleanMobile.slice(-10)); // Take last 10 digits
+        } else if (item.length > 0) {
+          mobiles.push(item);
+        }
+      }
     });
 
-    // Also add student to the chat room
-    if (batch.chatRoomId) {
+    // 3. Query all users matching either emails or mobiles
+    const foundStudents = await User.find({
+      $or: [
+        { email: { $in: emails } },
+        { mobile: { $in: mobiles } }
+      ]
+    });
+
+    if (foundStudents.length === 0) {
+      return res.status(404).json({ 
+        message: 'No registered students found matching the provided Gmail addresses or mobile numbers.' 
+      });
+    }
+
+    // 4. Filter and add new students
+    const addedNames = [];
+    const existingNames = [];
+    const addedUserIds = [];
+
+    foundStudents.forEach(student => {
+      const alreadyIn = batch.students.some(s => s.userId.toString() === student._id.toString());
+      if (alreadyIn) {
+        existingNames.push(student.fullName || student.email || student.mobile);
+      } else {
+        batch.students.push({
+          userId: student._id,
+          email: student.email,
+          fullName: student.fullName,
+        });
+        addedUserIds.push(student._id);
+        addedNames.push(student.fullName || student.email || student.mobile);
+      }
+    });
+
+    // 5. Update linked Chat Room participants
+    if (batch.chatRoomId && addedUserIds.length > 0) {
       await ChatRoom.findByIdAndUpdate(batch.chatRoomId, {
-        $addToSet: { participants: student._id }
+        $addToSet: { participants: { $each: addedUserIds } }
       });
     }
 
     await batch.save();
-    res.status(200).json({ message: 'Student added successfully.', batch });
+
+    // 6. Identify items that were not found in the database
+    const foundEmails = foundStudents.map(s => s.email?.toLowerCase());
+    const foundMobiles = foundStudents.map(s => s.mobile);
+    const notFound = items.filter(item => {
+      const clean = item.toLowerCase();
+      // Match by exact email or trailing 10-digit mobile phone matches
+      const cleanMobile = clean.replace(/\D/g, '');
+      const hasMobileMatch = foundMobiles.some(m => m === clean || (cleanMobile.length >= 10 && m.slice(-10) === cleanMobile.slice(-10)));
+      return !foundEmails.includes(clean) && !hasMobileMatch;
+    });
+
+    // 7. Build custom user response
+    let statusMessage = '';
+    if (addedNames.length > 0) {
+      statusMessage += `${addedNames.length} student(s) added successfully. `;
+    }
+    if (existingNames.length > 0) {
+      statusMessage += `${existingNames.length} student(s) were already enrolled. `;
+    }
+    if (notFound.length > 0) {
+      statusMessage += `${notFound.length} input(s) were not found.`;
+    }
+
+    res.status(200).json({
+      message: statusMessage.trim(),
+      addedCount: addedNames.length,
+      addedNames,
+      existingNames,
+      notFound,
+      batch
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
