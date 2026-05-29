@@ -27,6 +27,7 @@ const PRODUCT_IMAGE_PRESETS = [
 
 const YourShop = () => {
   const { t, locale } = useLanguage();
+  const isEn = locale === 'en';
   const { token, user } = useAuth();
   const navigate = useNavigate();
 
