@@ -159,7 +159,152 @@ function getAdviceFallback(prompt, language) {
   const p = prompt.toLowerCase();
   const isHindi = language === 'hi';
 
-  // 1. Agriculture / Farming Questions
+  // 1. Natural Pest Control Tips
+  if (p.includes('pest') || p.includes('insect') || p.includes('कीटनाशक') || p.includes('कीट')) {
+    if (isHindi) {
+      return `नमस्ते! प्राकृतिक कीट नियंत्रण (Natural Pest Control) के लिए 4 अत्यंत प्रभावी जैविक उपाय निम्नलिखित हैं:
+
+1. **नीमअस्त्र (Neemastra)**: 5 किलो नीम की पत्तियों की चटनी, 5 लीटर गोमूत्र, और 1 किलो ताज़ा गोबर को 100 लीटर पानी में मिलाकर 24 घंटे के लिए रखें। रस चूसक कीटों और छोटी इल्लियों के लिए यह सर्वोत्तम जैविक कीटनाशक है।
+2. **अग्निअस्त्र (Agniastra)**: 5 किलो नीम की पत्तियां, 500 ग्राम तंबाकू, 500 ग्राम तीखी हरी मिर्च और 250 ग्राम लहसुन को गोमूत्र में अच्छी तरह उबालें। छानकर पानी में मिलाकर फसलों पर छिड़काव करें। यह तना छेदक और फल छेदक कीटों का पूर्ण नियंत्रण करता है।
+3. **दशपर्णी अर्क (Dashparni Ark)**: नीम, करंज, धतूरा, बेल, शरीफा और 5 अन्य प्रकार की कड़वी पत्तियों के अर्क से तैयार यह घोल सभी प्रकार के हानिकारक कीटों का काल है।
+4. **नीम तेल छिड़काव (Neem Oil Spray)**: 1 लीटर पानी में 15-20 मिली नीम का तेल और 5-6 बूंदें जैविक तरल साबुन की मिलाकर हर हफ्ते छिड़काव करें।`;
+    } else {
+      return `Namaste! Here are 4 highly effective natural pest control remedies:
+
+1. **Neemastra**: Mix 5kg neem leaf paste, 5L cow urine, and 1kg fresh cow dung in 100L water. Ferment for 24 hours, stir twice daily. Excellent for controlling sucking pests, aphids, and whiteflies.
+2. **Agniastra**: Boil neem leaves, tobacco, spicy green chillies, and garlic paste in cow urine. Filter and dilute with water to spray. Effectively controls stem borer and fruit borer caterpillars.
+3. **Dashparni Ark**: Prepared by fermenting extracts from 10 different bitter and medicinal leaves. It is the ultimate organic broad-spectrum botanical pesticide.
+4. **Neem Oil Spray**: Mix 15-20ml organic Neem Oil with 5-6 drops of liquid soap in 1L of water. Spray weekly to prevent insect attacks.`;
+    }
+  }
+
+  // 2. Soil Testing
+  if (p.includes('soil test') || p.includes('soil testing') || p.includes('मिट्टी की जांच') || p.includes('मृदा')) {
+    if (isHindi) {
+      return `नमस्ते! मिट्टी की जांच (Soil Testing) कराने की पूरी प्रक्रिया और लाभ यहाँ दिए गए हैं:
+
+1. **नमूना कैसे लें (How to Collect)**: अपने खेत के 10-15 अलग-अलग स्थानों से ऊपरी घास-फूस हटाकर अंग्रेजी के 'V' आकार में 15 सेमी गहरा गड्ढा खोदें। दोनों तरफ की मिट्टी खुरचकर निकालें। सभी नमूनों को अच्छी तरह मिलाएं और 500 ग्राम मिट्टी एक साफ थैली में रख लें।
+2. **कहाँ जमा करें (Where to Submit)**: इस नमूने को अपने नजदीकी सरकारी मृदा परीक्षण प्रयोगशाला या कृषि विज्ञान केंद्र (KVK) में जमा करें।
+3. **लाभ (Benefits)**: यह आपकी मिट्टी में नाइट्रोजन, फास्फोरस, पोटाश और जिंक जैसे सूक्ष्म तत्वों की सटीक कमी को बताता है, जिससे अनावश्यक खाद का खर्च 25% तक कम हो जाता है।`;
+    } else {
+      return `Namaste! Here is your complete guide to Soil Testing:
+
+1. **How to Collect Sample**: Clear the top dry organic matter from 10-15 random spots in your field. Dig a 'V' shaped pit of 15cm depth. Scrap soil from the sides, mix all samples thoroughly, dry in shade, and pack 500g in a clean plastic bag.
+2. **Where to Submit**: Take the sample to your nearest Krishi Vigyan Kendra (KVK) or Government Soil Testing Laboratory.
+3. **Key Benefits**: It evaluates the exact content of Nitrogen (N), Phosphorus (P), Potassium (K), and micronutrients. Helps you reduce fertilizer costs by up to 25% by applying only what is missing.`;
+    }
+  }
+
+  // 3. Dengue Symptoms & Treatment
+  if (p.includes('dengue') || p.includes('डेंगू')) {
+    if (isHindi) {
+      return `*महत्वपूर्ण अस्वीकरण: मैं एक एआई हूँ, डॉक्टर नहीं। किसी भी गंभीर स्थिति में कृपया तुरंत डॉक्टर से मिलें।*
+
+**डेंगू बुखार के प्रमुख लक्षण:**
+1. अचानक बहुत तेज बुखार आना (104°F तक)।
+2. सिर में तेज दर्द होना, विशेष रूप से आंखों के पीछे।
+3. हड्डियों, जोड़ों और मांसपेशियों में अत्यधिक असहनीय दर्द (इसे 'हड्डी तोड़ बुखार' भी कहते हैं)।
+4. उल्टी आना, जी मिचलाना और त्वचा पर लाल चकत्ते (Rashes) पड़ना।
+
+**प्राथमिक उपचार और सावधानियां:**
+- मरीज को पूरी तरह आराम करने दें।
+- शरीर में पानी की कमी (Dehydration) न होने दें। नारियल पानी, ओआरएस (ORS) घोल, और पपीते के पत्तों का रस पिएं।
+- बुखार के लिए केवल डॉक्टर द्वारा बताई गई दवा (जैसे पैरासिटामोल) लें। आइबुप्रोफेन या एस्पिरिन जैसी दवाओं से बचें।`;
+    } else {
+      return `*Disclaimer: I am an AI assistant, not a doctor. Seek medical help immediately for serious symptoms.*
+
+**Common Dengue Symptoms include:**
+1. High fever (up to 104°F/40°C) with sudden onset.
+2. Severe headache, especially painful behind the eyes.
+3. Heavy pain in muscles, bones, and joints (often called "break-bone fever").
+4. Nausea, vomiting, swollen glands, and red skin rashes.
+
+**Care & Management Tips:**
+- Complete physical bed rest is essential.
+- Prevent dehydration by drinking plenty of water, coconut water, fresh juices, and ORS solution.
+- Take paracetamol for fever as recommended by a doctor. Avoid blood-thinning painkillers like Ibuprofen or Aspirin.`;
+    }
+  }
+
+  // 4. ORS Preparation
+  if (p.includes('ors') || p.includes('ओआरएस') || p.includes('घोल')) {
+    if (isHindi) {
+      return `घर पर जीवन रक्षक ओआरएस (ORS) घोल बनाने की अत्यंत सरल विधि:
+
+1. **आवश्यक सामग्री**: 1 लीटर साफ पीने का पानी (यदि हो सके तो पानी को उबालकर ठंडा कर लें), 6 छोटी चम्मच चीनी (समान मात्रा में), और आधा छोटी चम्मच नमक।
+2. **तैयार करने की विधि**: पानी में चीनी और नमक डालकर पूरी तरह घुलने तक चम्मच से अच्छी तरह मिला लें।
+3. **महत्वपूर्ण नियम**: दस्त, उल्टी, लू या कमजोरी होने पर इसे घूंट-घूंट करके पिएं। तैयार किए गए ओआरएस घोल को हमेशा ढककर रखें और 24 घंटे के बाद बचा हुआ घोल फेंककर नया घोल बनाएं।`;
+    } else {
+      return `Here is the standard recipe to prepare ORS (Oral Rehydration Salts) at home:
+
+1. **Ingredients**: 1 Liter of clean drinking water (boiled and cooled), 6 level teaspoons of Sugar, and 1/2 (half) level teaspoon of Salt.
+2. **Preparation**: Stir the sugar and salt into the water thoroughly until they are completely dissolved.
+3. **Usage Guidelines**: Drink small sips regularly during diarrhea, vomiting, heat stroke, or dehydration. Keep the container covered. Dispose of any leftover solution after 24 hours.`;
+    }
+  }
+
+  // 5. Malaria Prevention
+  if (p.includes('malaria') || p.includes('मलेरिया')) {
+    if (isHindi) {
+      return `मलेरिया से बचाव (Malaria Prevention) के 4 प्रमुख सुरक्षात्मक उपाय:
+
+1. **मच्छरों का प्रजनन रोकें**: घर के आसपास, कूलर, गमलों, टायरों या नालियों में पानी जमा न होने दें। यदि पानी जमा है, तो उसमें थोड़ा सा केरोसिन या पुराना तेल डाल दें ताकि मच्छर के लार्वे नष्ट हो जाएं।
+2. **मच्छरदानी का प्रयोग**: सोते समय हमेशा कीटनाशक उपचारित मच्छरदानी (Mosquito Net) का प्रयोग करें।
+3. **व्यक्तिगत सुरक्षा**: घर से बाहर निकलते समय पूरी बाजू के कपड़े पहनें और त्वचा पर मच्छर भगाने वाली क्रीम का प्रयोग करें।
+4. **घरेलू उपाय**: शाम के समय नीम की पत्तियों का धुआं करें या कपूर जलाएं। जालीदार दरवाजे और खिड़कियां बंद रखें।`;
+    } else {
+      return `Here are the top 4 measures to prevent Malaria in your household:
+
+1. **Eliminate Standing Water**: Do not allow water to collect in pots, tires, coolers, or puddles. Drain stagnant water or spray a few drops of kerosene/oil to kill mosquito larvae.
+2. **Use Treated Mosquito Nets**: Sleep under a mosquito net, especially during night and dawn, to block mosquito bites.
+3. **Wear Protective Clothing**: Wear long-sleeved shirts, full pants, and apply mosquito repellent cream on exposed skin.
+4. **Keep Houses Sealed**: Install mesh screens on doors and windows. Burn camphor or use neem leaf smoke during evenings.`;
+    }
+  }
+
+  // 6. Weekly Study Plan for SSC Exams
+  if (p.includes('ssc') || p.includes('एसएससी') || p.includes('परीक्षा')) {
+    if (isHindi) {
+      return `एसएससी (SSC) परीक्षा क्रैक करने के लिए एक व्यावहारिक साप्ताहिक टाइम टेबल:
+
+- **गणित (रोज 2 घंटे)**: अंकगणित (प्रतिशत, लाभ-हानि, अनुपात) पर ध्यान दें। शॉर्टकट ट्रिक्स और पिछले साल के सवालों का अभ्यास करें।
+- **रीज़निंग (रोज 1 घंटा)**: कोडिंग-डिकोडिंग, रक्त संबंध, और पहेलियों (Puzzles) के प्रश्न रोज हल करें।
+- **अंग्रेजी / सामान्य हिंदी (रोज 1.5 घंटे)**: व्याकरण के नियमों को याद करें और रोज 10 नए शब्द सीखें।
+- **सामान्य ज्ञान व करंट अफेयर्स (रोज 1.5 घंटे)**: रोज सुबह समाचार पत्र पढ़ें और इतिहास व भूगोल के महत्वपूर्ण नोट्स बनाएं।
+- **रविवार का नियम**: रविवार को पूरा एक मॉक टेस्ट (Mock Test) हल करें और अपनी गलतियों का गहराई से विश्लेषण करें।`;
+    } else {
+      return `Here is a highly effective weekly Study Plan to crack SSC Exams:
+
+- **Quantitative Aptitude (Daily 2 Hours)**: Revise core arithmetic (Percentages, Profit & Loss, Ratios, Speed & Distance). Memorize tables and squares for faster calculations.
+- **Reasoning Ability (Daily 1 Hour)**: Practice non-verbal reasoning, series completion, coding-decoding, and puzzle-solving.
+- **English Comprehension (Daily 1.5 Hours)**: Memorize 10 new words daily, read editorial columns to improve reading speed, and solve error-spotting exercises.
+- **General Awareness (Daily 1.5 Hours)**: Read last 6 months' current affairs. Focus on static GK including Indian Constitution, Geography, and History.
+- **Sunday Strategy**: Solve 1 full-length previous year question paper under exam conditions. Spent 2 hours analyzing weak spots.`;
+    }
+  }
+
+  // 7. Free Coding Roadmaps
+  if (p.includes('learn coding') || p.includes('learn code') || p.includes('फ्री में कोडिंग') || p.includes('कोडिंग')) {
+    if (isHindi) {
+      return `इंटरनेट पर बिल्कुल फ्री में कोडिंग सीखने के 3 सबसे बेहतरीन प्लेटफॉर्म और सही तरीका:
+
+1. **W3Schools**: वेब डेवलपमेंट की शुरुआत करने के लिए सर्वश्रेष्ठ वेबसाइट है। यहाँ आप HTML, CSS और JavaScript के बेसिक प्रैक्टिकल कोड लिखकर सीख सकते हैं।
+2. **freeCodeCamp**: यह पूरी दुनिया में मुफ़्त सर्टिफाइड कोर्सेज प्रदान करने वाला सबसे बड़ा प्लेटफॉर्म है। यहाँ आप कोडिंग प्रैक्टिस कर सर्टिफिकेट प्राप्त कर सकते हैं।
+3. **YouTube**: हिंदी में सीखने के लिए 'CodeWithHarry' या 'Apna College' और अंग्रेजी के लिए 'Programming with Mosh' के ट्यूटोरियल देखें।
+
+*सही रोडमैप*: सबसे पहले **HTML & CSS** (वेबसाइट डिजाइन) सीखें, फिर **JavaScript** (वेबसाइट लॉजिक) सीखें, और इसके बाद **Python** या **React.js** सीखकर खुद के छोटे प्रोजेक्ट्स बनाएं।`;
+    } else {
+      return `Here is the perfect step-by-step path to learn Coding completely free online:
+
+1. **W3Schools**: The absolute best resource for beginners. You can write, edit, and run code directly in the browser for HTML, CSS, and basic JavaScript.
+2. **freeCodeCamp**: A non-profit certified platform offering over 9,000 completely free coding tutorials. You get professional certificates upon completion.
+3. **YouTube Channels**: Follow playlists on channels like 'Programming with Mosh' (English), 'freeCodeCamp.org', or 'CodeWithHarry' (Hindi).
+
+*Recommended Roadmap*: Start with **HTML & CSS** to build website layouts, move to **JavaScript** to learn logical programming, and then learn **React.js** or **Python** to build real-world software.`;
+    }
+  }
+
+  // 8. Agriculture / Farming Questions (General / Crop yield)
   if (p.includes('crop') || p.includes('fertilizer') || p.includes('farming') || p.includes('yield') || p.includes('profit') || 
       p.includes('फसल') || p.includes('खेती') || p.includes('खाद') || p.includes('पैदावार') || p.includes('कृषि')) {
     if (isHindi) {
@@ -183,83 +328,65 @@ Feel free to ask if you have questions about a specific crop!`;
     }
   }
 
-  // 2. Education / Careers / Coding
-  if (p.includes('career') || p.includes('study') || p.includes('code') || p.includes('learn') || p.includes('exam') || p.includes('student') || 
-      p.includes('पढ़ाई') || p.includes('परीक्षा') || p.includes('कोडिंग') || p.includes('नौकरी') || p.includes('छात्र')) {
+  // 9. Education / Careers / Schools
+  if (p.includes('career') || p.includes('study') || p.includes('school') || p.includes('college') || p.includes('learn') || p.includes('exam') || p.includes('student') || 
+      p.includes('पढ़ाई') || p.includes('परीक्षा') || p.includes('नौकरी') || p.includes('छात्र') || p.includes('स्कूल') || p.includes('शिक्षक')) {
     if (isHindi) {
-      return `नमस्ते! ग्रामीण छात्रों के लिए कोडिंग और आधुनिक तकनीक में करियर बनाने के मुख्य सुझाव:
+      return `नमस्ते! ग्रामीण छात्रों के लिए कोडिंग, आधुनिक शिक्षा और करियर बनाने के मुख्य सुझाव:
 
-1. कोडिंग सीखें: W3Schools, freeCodeCamp या YouTube से मुफ़्त में HTML, CSS और JavaScript सीखें।
-2. कृषि तकनीक (Agri-Tech): स्मार्ट खेती और मौसम की भविष्यवाणी करने वाले ऐप्स बनाने वाले डेवलपर्स की आज बाजार में भारी मांग है।
-3. सरकारी परीक्षाएँ: यदि आप SSC या बैंक परीक्षा की तैयारी कर रहे हैं, तो गणित, सामान्य ज्ञान और तार्किक क्षमता (Reasoning) के लिए रोज़ 4 घंटे का समय दें।
-4. स्थानीय प्रोजेक्ट्स: अपने गाँव की समस्याओं को हल करने वाले छोटे ऐप्स या वेबसाइट्स बनाकर अभ्यास करें।
-
-आप किस विषय या सरकारी परीक्षा के बारे में विस्तार से जानना चाहते हैं?`;
+1. डिजिटल शिक्षा: गूगल और यूट्यूब के माध्यम से निःशुल्क कोर्सेज (जैसे कोडिंग, computer basics) सीखें।
+2. स्थानीय स्कूल व कॉलेज: अपने गाँव या ब्लॉक में उपलब्ध सरकारी माध्यमिक विद्यालयों और इंटरमीडिएट कॉलेजों में दाखिला लें।
+3. सरकारी परीक्षा तैयारी: यदि आप एसएससी, बैंकिंग या रेलवे की तैयारी कर रहे हैं, तो गणित और सामान्य ज्ञान पर प्रतिदिन 4-5 घंटे ध्यान दें।
+4. छात्रवृत्ति योजनाएं: सरकारी योजनाओं (जैसे एनएमएमएस, पोस्ट मैट्रिक स्कॉलरशिप) के लिए ग्राममित्र योजनाएं विभाग पर आवेदन करें।`;
     } else {
-      return `Hello! For rural students looking to build a career in Coding or Modern Technology:
+      return `Hello! For rural students looking to build a career and access modern education:
 
-1. Learn Coding Basics: Start with free online resources like W3Schools, freeCodeCamp, or YouTube. Learn HTML, CSS, and basic JavaScript.
-2. Agriculture Technology: There is a high demand for developers who can build apps for smart farming, weather tracking, and marketplace solutions.
-3. Government Exams: If you are preparing for SSC or Bank exams, allocate 4 hours daily to Quantitative Aptitude, General Knowledge, and Reasoning.
-4. Build Projects: Create small websites or apps that solve local problems in your village to stand out in interviews.
-
-Let me know if you want a detailed roadmap for a specific field!`;
+1. Digital Learning: Learn computer basics, digital literacy, and coding free on websites like Google, YouTube, and freeCodeCamp.
+2. Schools & Colleges: Access government high schools and intermediate colleges in your district directory for quality education.
+3. Exam Preparation: If you are preparing for government exams (SSC, banking, railways), dedicate 4-5 hours daily to mathematics, vocabulary, and General Knowledge.
+4. Scholarships: Keep track of post-matric and merit-based national scholarships on the schemes dashboard to fund your higher studies.`;
     }
   }
 
-  // 3. Business / Store / Marketplace
-  if (p.includes('business') || p.includes('shop') || p.includes('sell') || p.includes('marketplace') || p.includes('price') || 
-      p.includes('व्यापार') || p.includes('दुकान') || p.includes('बिक्री') || p.includes('ग्राहक')) {
+  // 10. Business / Store / Marketplace / Mandi
+  if (p.includes('business') || p.includes('shop') || p.includes('sell') || p.includes('marketplace') || p.includes('price') || p.includes('mandi') || 
+      p.includes('व्यापार') || p.includes('दुकान') || p.includes('बिक्री') || p.includes('ग्राहक') || p.includes('मंडी')) {
     if (isHindi) {
-      return `नमस्ते! अपने गाँव के व्यवसाय को बढ़ाने के लिए मुख्य रणनीतियाँ:
+      return `नमस्ते! अपने गाँव के व्यवसाय को बढ़ाने और मंडी का सही मूल्य पाने के लिए मुख्य रणनीतियाँ:
 
-1. माँग को समझें: ऐसी चीजों की पहचान करें जिनकी गाँव में ज़रूरत है लेकिन उन्हें लेने के लिए शहर जाना पड़ता है (जैसे मोबाइल रिपेयर, खाद की नई किस्में)।
-2. डिजिटल माध्यम: अपने व्यवसाय को ग्राममित्र मार्केटप्लेस पर पंजीकृत करें ताकि लोग घर बैठे उत्पाद देख सकें और सीधे संपर्क कर सकें।
-3. अच्छी ग्राहक सेवा: नियमित ग्राहकों को होम डिलीवरी या आसान भुगतान की सुविधा दें ताकि वे आपके पास ही आएं।
-4. मौसमी स्टॉक: त्यौहारों या खेती के सीजन से पहले ही जरूरी सामानों का स्टॉक रखें।
-
-आपके पास किस तरह की दुकान या व्यवसाय का विचार है?`;
+1. डिजिटल माध्यम: अपने व्यवसाय और उत्पादों को ग्राममित्र मंडी मार्केटप्लेस पर दर्ज करें ताकि लोग घर बैठे उत्पाद देख सकें और आपसे सीधे संपर्क कर सकें।
+2. माँग को समझें: ऐसी चीजों की दुकान शुरू करें जिनकी गाँव में ज़रूरत है लेकिन उन्हें लेने के लिए शहर जाना पड़ता है (जैसे मोबाइल रिपेयर, बीज की दुकान)।
+3. अच्छी ग्राहक सेवा: अपने ग्राहकों को होम डिलीवरी या आसान भुगतान (डिजिटल यूपीआई) की सुविधा प्रदान करें।
+4. मंडी मूल्य ट्रैकिंग: मंडी में जाने से पहले कीमतों का पता लगाएं ताकि आपको अपनी उपज का सही और अधिकतम दाम मिल सके।`;
     } else {
-      return `Namaste! Here is a strategy to grow your local village business:
+      return `Namaste! Here are the best strategies to grow your local village business and get high Mandi prices:
 
-1. Identify Demand: Analyze what products are in high demand in your village but require traveling to the town (e.g., electronics repair, specialized seed supply).
-2. Digital Presence: Register your shop on the GramMitra marketplace to allow villagers to browse products online and call you.
-3. Customer Service: Offer home delivery or flexible credit options to regular customers to build trust.
-4. Seasonal Inventory: Keep stocks of items ahead of their season (e.g., fertilizers before monsoon, clothing before festivals).
-
-Tell me about your business idea and we can plan details!`;
+1. Digital Presence: Register your shop on the GramMitra Marketplace so customers can view catalog online and contact you directly.
+2. Local Demand: Identify what products/services are missing in the village (e.g. electrical repair, high-grade seeds) and start catering to them.
+3. Customer Loyalty: Offer free home delivery within the village and accept digital UPI payments.
+4. Mandi Price Check: Monitor Mandi rates daily before selling crops to secure the maximum market value for your produce.`;
     }
   }
 
-  // 4. Healthcare / Illness / Fever
-  if (p.includes('health') || p.includes('fever') || p.includes('dengue') || p.includes('cough') || p.includes('doctor') || p.includes('medicine') || 
-      p.includes('बीमारी') || p.includes('बुखार') || p.includes('दवा') || p.includes('डॉक्टर') || p.includes('इलाज')) {
+  // 11. Labour / Job Services / Vacancies
+  if (p.includes('job') || p.includes('work') || p.includes('hire') || p.includes('labour') || p.includes('vacanc') || 
+      p.includes('मजदूर') || p.includes('काम') || p.includes('नौकरी') || p.includes('रोजगार') || p.includes('कामगार')) {
     if (isHindi) {
-      return `*महत्वपूर्ण अस्वीकरण: मैं एक एआई सहायक हूँ, डॉक्टर नहीं। किसी भी गंभीर स्थिति या बीमारी में कृपया तुरंत डॉक्टर से संपर्क करें।*
+      return `नमस्ते! ग्राममित्र रोजगार और श्रमिक सेवाओं के अंतर्गत काम खोजने और मजदूर बुलाने की जानकारी:
 
-सामान्य स्वास्थ्य और प्राथमिक उपचार के मुख्य सुझाव:
-
-1. पानी की कमी न होने दें (Keep Hydrated): ओआरएस (ORS) या साफ उबले हुए पानी का खूब सेवन करें।
-2. बुखार प्रबंधन: आराम करें और शरीर का तापमान नियंत्रित रखने के लिए माथे पर ठंडी पट्टियां रखें। पैरासिटामोल जैसी दवाएं डॉक्टर की सलाह से ही लें।
-3. बचाव के उपाय: मच्छरों से बचने के लिए आसपास पानी जमा न होने दें और पूरी बाजू के कपड़े पहनें।
-4. आपातकालीन चेतावनी: सांस लेने में कठिनाई या बेहोशी होने पर बिना देर किए अस्पताल जाएं।
-
-क्या आप किसी विशेष बीमारी के लक्षण जानना चाहते हैं?`;
+1. **काम की तलाश**: यदि आप काम की तलाश कर रहे हैं, तो ग्राममित्र श्रम विभाग पर अपना पंजीकरण करें ताकि स्थानीय ठेकेदार आपसे संपर्क कर सकें।
+2. **मजदूर बुलाएं (इलेक्ट्रीशियन, ड्राइवर, प्लंबर)**: यदि आपको किसी काम के लिए मजदूर चाहिए, तो आप हमारे डायरेक्टरी से सीधे संपर्क कर उन्हें बुला सकते हैं।
+3. **मनरेगा व सरकारी काम**: अपने पंचायत भवन में संपर्क कर सक्रिय जॉब कार्ड के माध्यम से रोजगार प्राप्त करें।`;
     } else {
-      return `*Disclaimer: I am an AI assistant, not a medical professional. Please consult a qualified doctor for any serious health conditions.*
+      return `Namaste! Welcome to GramMitra Labour and Job Directory services:
 
-For general health and recovery tips:
-
-1. Keep Hydrated: Drink plenty of clean, boiled water or ORS (Oral Rehydration Salts).
-2. Fever Management: Take rest and use cold damp cloths on the forehead to keep body temperature down. Consult a doctor before taking medications.
-3. Preventive Care: Keep surroundings clean, clear stagnant water to avoid mosquito-borne diseases (dengue/malaria), and wear full clothing.
-4. Seek Emergency Care if you experience difficulty breathing, chest pain, or loss of consciousness.
-
-Please let me know if you want symptoms for a specific seasonal disease!`;
+1. **Find a Local Job**: Register your profile as a skilled/unskilled worker (electrician, driver, painter, mason) on the Labour dashboard so local contractors can hire you.
+2. **Hire Services**: You can easily browse and call local professionals (electricians, mechanics, plumbers) directly from our village directory.
+3. **MGNREGA Scheme**: Apply for local public works using your MGNREGA Job Card at the local Gram Panchayat office for guaranteed wage employment.`;
     }
   }
 
-  // 5. Default General Response
+  // 12. Default General Response
   if (isHindi) {
     return `नमस्ते! मैं ग्राममित्र एआई (GramMitra AI) हूँ, आपका ग्रामीण सहायक। 
 

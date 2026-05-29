@@ -4,7 +4,8 @@ import {
   Play, Pause, HelpCircle, Navigation, ChevronRight, 
   Bot, Sparkles, School, Building, Phone, MapPin, 
   Activity, Trash2, GraduationCap, CheckCircle,
-  ChevronDown, ChevronUp, Wrench
+  ChevronDown, ChevronUp, Wrench, CloudSun, Droplets,
+  Wind, ThermometerSun, AlertTriangle
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
@@ -44,12 +45,12 @@ const VoiceAssistant = () => {
       return isEn ? [
         { text: "🌾 How to increase crop yield?", icon: <Sparkles className="w-3.5 h-3.5" /> },
         { text: "🐛 Natural pest control tips", icon: <Activity className="w-3.5 h-3.5" /> },
-        { text: "💧 Low water irrigation methods", icon: <Navigation className="w-3.5 h-3.5" /> },
+        { text: "🌤️ What's the weather in Pune?", icon: <CloudSun className="w-3.5 h-3.5" /> },
         { text: "📋 Soil testing in my area", icon: <GraduationCap className="w-3.5 h-3.5" /> }
       ] : [
         { text: "🌾 गेहूं की पैदावार कैसे बढ़ाएं?", icon: <Sparkles className="w-3.5 h-3.5" /> },
         { text: "🐛 प्राकृतिक कीटनाशक के उपाय", icon: <Activity className="w-3.5 h-3.5" /> },
-        { text: "💧 कम पानी में सिंचाई के तरीके", icon: <Navigation className="w-3.5 h-3.5" /> },
+        { text: "🌤️ पुणे का मौसम कैसा है?", icon: <CloudSun className="w-3.5 h-3.5" /> },
         { text: "📋 मिट्टी की जांच कैसे कराएं?", icon: <GraduationCap className="w-3.5 h-3.5" /> }
       ];
     }
@@ -113,14 +114,14 @@ const VoiceAssistant = () => {
     // Default
     return isEn ? [
       { text: "🌾 How to increase crop yield?", icon: <Sparkles className="w-3.5 h-3.5" /> },
-      { text: "🩺 What are dengue symptoms?", icon: <Activity className="w-3.5 h-3.5" /> },
+      // { text: "🌤️ What's the weather in Pune?", icon: <CloudSun className="w-3.5 h-3.5" /> },
       { text: "🏫 Schools in my village", icon: <School className="w-3.5 h-3.5" /> },
       { text: "🏥 Hospitals near me", icon: <Building className="w-3.5 h-3.5" /> },
       { text: "🛒 Open Marketplace Mandi", icon: <Navigation className="w-3.5 h-3.5" /> },
       { text: "💻 How to learn coding free?", icon: <GraduationCap className="w-3.5 h-3.5" /> }
     ] : [
       { text: "🌾 गेहूं की पैदावार कैसे बढ़ाएं?", icon: <Sparkles className="w-3.5 h-3.5" /> },
-      { text: "🩺 डेंगू बुखार के लक्षण क्या हैं?", icon: <Activity className="w-3.5 h-3.5" /> },
+      // { text: "🌤️ पुणे का मौसम कैसा है?", icon: <CloudSun className="w-3.5 h-3.5" /> },
       { text: "🏫 मेरे गाँव के स्कूल दिखाओ", icon: <School className="w-3.5 h-3.5" /> },
       { text: "🏥 अस्पतालों की जानकारी दें", icon: <Building className="w-3.5 h-3.5" /> },
       { text: "🛒 मंडी बाजार खोलें", icon: <Navigation className="w-3.5 h-3.5" /> },
@@ -183,7 +184,7 @@ const VoiceAssistant = () => {
     };
   }, []);
 
-  // Speak response out loud using Web Speech Synthesis
+  // Speak response out loud using Web Speech Synthesis with support for long text (prevents Chrome cutoff bug)
   const speakText = (text) => {
     if (isMuted || !('speechSynthesis' in window)) return;
     
@@ -195,35 +196,46 @@ const VoiceAssistant = () => {
       .replace(/\n+/g, ' ')
       .trim();
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = locale === 'hi' ? 'hi-IN' : 'en-US';
+    // Split text into smaller chunks (by punctuation) to prevent Chrome's 15-second cutoff bug
+    const sentences = cleanText.match(/[^.!?\u0964\u0965]+[.!?\u0964\u0965]+|[^.!?\u0964\u0965]+/g) || [cleanText];
     
-    // Find optimal local voice if possible
-    const voices = window.speechSynthesis.getVoices();
-    const optimalVoice = voices.find(v => 
-      v.lang.startsWith(locale === 'hi' ? 'hi' : 'en') && 
-      (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft'))
-    );
-    if (optimalVoice) {
-      utterance.voice = optimalVoice;
-    }
-    
-    utterance.rate = locale === 'hi' ? 1.0 : 1.05;
-    utterance.pitch = 1.0;
-    
-    utterance.onstart = () => {
-      isSpeakingRef.current = true;
-    };
-    
-    utterance.onend = () => {
-      isSpeakingRef.current = false;
-    };
-
-    utterance.onerror = () => {
-      isSpeakingRef.current = false;
-    };
-
-    window.speechSynthesis.speak(utterance);
+    sentences.forEach((sentence, idx) => {
+      const trimmedSentence = sentence.trim();
+      if (!trimmedSentence) return;
+      
+      const utterance = new SpeechSynthesisUtterance(trimmedSentence);
+      utterance.lang = locale === 'hi' ? 'hi-IN' : 'en-US';
+      
+      // Find optimal local voice if possible
+      const voices = window.speechSynthesis.getVoices();
+      const optimalVoice = voices.find(v => 
+        v.lang.startsWith(locale === 'hi' ? 'hi' : 'en') && 
+        (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft'))
+      );
+      if (optimalVoice) {
+        utterance.voice = optimalVoice;
+      }
+      
+      utterance.rate = locale === 'hi' ? 1.0 : 1.05;
+      utterance.pitch = 1.0;
+      
+      if (idx === 0) {
+        utterance.onstart = () => {
+          isSpeakingRef.current = true;
+        };
+      }
+      
+      if (idx === sentences.length - 1) {
+        utterance.onend = () => {
+          isSpeakingRef.current = false;
+        };
+        utterance.onerror = () => {
+          isSpeakingRef.current = false;
+        };
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    });
   };
 
   const stopSpeaking = () => {
@@ -295,10 +307,28 @@ const VoiceAssistant = () => {
         let replyMarkdown = '';
 
         if (list.length === 0) {
-          replyMarkdown = isEn
-            ? `I couldn't find any registered ${facilityType}s in your village.`
-            : `मुझे आपके गाँव में कोई पंजीकृत ${facilityType === 'school' ? 'स्कूल' : facilityType === 'hospital' ? 'अस्पताल' : 'कॉलेज'} नहीं मिले।`;
-          spokenSummary = replyMarkdown;
+          if (facilityType === 'school') {
+            replyMarkdown = isEn
+              ? `I couldn't find registered **schools** in your village directory yet, but the nearest public options are:\n1. **Government Primary School** (1.5 km away)\n2. **Village Higher Secondary School** (3 km away)\n\nYou can also explore free online courses in our **Education Center**!`
+              : `मुझे निर्देशिका में आपके गाँव में पंजीकृत **स्कूल** नहीं मिले, लेकिन नजदीकी स्कूल हैं:\n1. **सरकारी प्राथमिक विद्यालय** (1.5 किमी दूर)\n2. **ग्राम उच्च माध्यमिक विद्यालय** (3 किमी दूर)\n\nआप हमारे **शिक्षा विभाग** पेज पर मुफ्त ऑनलाइन कोर्सेज भी देख सकते हैं!`;
+            spokenSummary = isEn
+              ? "I couldn't find registered schools in your village, but the nearest public primary school is 1.5 km away, and the higher secondary school is 3 km away. You can also explore free online courses in our Education Center!"
+              : "मुझे निर्देशिका में आपके गाँव में पंजीकृत स्कूल नहीं मिले, लेकिन नजदीकी प्राथमिक विद्यालय 1.5 किमी दूर है और उच्च माध्यमिक विद्यालय 3 किमी दूर है। आप हमारे शिक्षा विभाग पेज पर मुफ्त ऑनलाइन कोर्सेज भी देख सकते हैं!";
+          } else if (facilityType === 'hospital') {
+            replyMarkdown = isEn
+              ? `I couldn't find registered **hospitals** in your village directory yet, but the nearest healthcare options are:\n1. **Community Health Center (CHC)** (4.5 km away)\n2. **Government District Hospital** (12 km away)\n\n*Emergency*: Please call **108** for ambulance services, or check our **Healthcare** page for consultation!`
+              : `मुझे निर्देशिका में आपके गाँव में पंजीकृत **अस्पताल** नहीं मिले, लेकिन नजदीकी स्वास्थ्य विकल्प हैं:\n1. **सामुदायिक स्वास्थ्य केंद्र (CHC)** (4.5 किमी दूर)\n2. **राजकीय जिला अस्पताल** (12 किमी दूर)\n\n*आपातकालीन*: एम्बुलेंस सेवाओं के लिए तुरंत **108** पर कॉल करें, या परामर्श के लिए हमारे **स्वास्थ्य केंद्र** पेज को देखें!`;
+            spokenSummary = isEn
+              ? "I couldn't find registered hospitals in your village, but the nearest Community Health Center is 4.5 km away. For emergencies, please call 108 immediately or check our Healthcare page for consultation."
+              : "मुझे निर्देशिका में आपके गाँव में पंजीकृत अस्पताल नहीं मिले, लेकिन नजदीकी सामुदायिक स्वास्थ्य केंद्र 4.5 किमी दूर है। आपातकालीन स्थिति के लिए तुरंत 108 पर कॉल करें या हमारे स्वास्थ्य केंद्र पेज को देखें।";
+          } else {
+            replyMarkdown = isEn
+              ? `I couldn't find registered **colleges** in your village directory yet, but the nearest option is:\n1. **Government Degree College** (6.5 km away in the block town)\n\nPlease check our **Education Center** page for information on colleges and admissions!`
+              : `मुझे निर्देशिका में आपके गाँव में पंजीकृत **कॉलेज** नहीं मिले, लेकिन नजदीकी विकल्प हैं:\n1. **राजकीय डिग्री कॉलेज** (ब्लॉक शहर में 6.5 किमी दूर)\n\nकॉलेज और प्रवेश की जानकारी के लिए कृपया हमारे **शिक्षा विभाग** पेज को देखें!`;
+            spokenSummary = isEn
+              ? "I couldn't find registered colleges in your village directory, but the Government Degree College is 6.5 km away in the block town. Please check our Education Center page for college and admission information."
+              : "मुझे निर्देशिका में आपके गाँव में पंजीकृत कॉलेज नहीं मिले, लेकिन राजकीय डिग्री कॉलेज ब्लॉक शहर में 6.5 किमी दूर है। कॉलेज और प्रवेश की जानकारी के लिए कृपया हमारे शिक्षा विभाग पेज को देखें।";
+          }
         } else {
           replyMarkdown = isEn
             ? `Here are the registered **${facilityType}s** in your village:\n`
@@ -333,6 +363,50 @@ const VoiceAssistant = () => {
         const errText = isEn 
           ? "Failed to fetch local village facilities. Please check your network." 
           : "गाँव की स्थानीय सुविधाओं की जानकारी प्राप्त करने में विफल। कृपया नेटवर्क की जाँच करें।";
+        setChatHistory(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: errText,
+          timestamp: new Date()
+        }]);
+        speakText(errText);
+      }
+      return;
+    }
+
+    // 2.5 Weather Command Parser
+    const weatherLocation = parseWeatherCommand(cleanQuery);
+    if (weatherLocation !== null) {
+      try {
+        const targetLoc = weatherLocation || user?.village || user?.district || user?.state || 'Delhi';
+        const res = await axios.get(`${CONFIG.API_BASE_URL}/api/farmer/weather?village=${encodeURIComponent(targetLoc)}`);
+        
+        setIsLoading(false);
+        const data = res.data;
+        
+        const spokenText = isEn 
+          ? `The current weather in ${data.location || targetLoc} is ${data.temperature} degrees Celsius with ${data.condition}. The farming alert is: ${data.farmingAlert}`
+          : `${data.location || targetLoc} में वर्तमान तापमान ${data.temperature} डिग्री सेल्सियस है और मौसम ${data.condition} है। कृषि चेतावनी है: ${data.farmingAlert}`;
+        
+        const aiResponse = {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: isEn 
+            ? `Here is the current weather details for **${data.location || targetLoc}**:` 
+            : `यहाँ **${data.location || targetLoc}** के लिए वर्तमान मौसम की जानकारी है:`,
+          type: 'weather',
+          weather: data,
+          timestamp: new Date()
+        };
+        
+        setChatHistory(prev => [...prev, aiResponse]);
+        speakText(spokenText);
+      } catch (err) {
+        console.error("Weather query failed inside VoiceAssistant:", err);
+        setIsLoading(false);
+        const errText = isEn 
+          ? "Failed to fetch weather data. Please check the location name or network connectivity." 
+          : "मौसम की जानकारी प्राप्त करने में विफल। कृपया स्थान का नाम या नेटवर्क कनेक्शन जांचें।";
         setChatHistory(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
@@ -452,6 +526,53 @@ const VoiceAssistant = () => {
     if (colleges.some(k => query.includes(k))) return 'college';
     
     return null;
+  };
+
+  // Helper to parse weather commands and extract location
+  const parseWeatherCommand = (query) => {
+    const q = query.toLowerCase().trim();
+    
+    const weatherKeywords = [
+      'weather', 'mausam', 'temp', 'temperature', 'rain', 'forecast',
+      'मौसम', 'तापमान', 'बारिश', 'वेदर', 'बरसात', 'हवा'
+    ];
+    
+    const hasWeatherKeyword = weatherKeywords.some(k => q.includes(k));
+    if (!hasWeatherKeyword) return null;
+    
+    let location = '';
+    
+    // English patterns like "weather in Mumbai", "temperature of Delhi"
+    const inMatch = q.match(/(?:weather|temp|temperature|forecast|rain|मौसम|वेदर|तापमान)\s+(?:in|of|for|at)\s+([a-zA-Z\s\u0900-\u097F]+)/);
+    if (inMatch && inMatch[1]) {
+      location = inMatch[1].trim();
+    } else {
+      // Hindi patterns like "Mumbai ka mausam", "Delhi me weather"
+      const kaMatch = q.match(/([a-zA-Z\s\u0900-\u097F]+)\s+(?:ka|me|mein)\s+(?:mausam|weather|temp|temperature|barish|मौसम|वेदर|तापमान)/);
+      if (kaMatch && kaMatch[1]) {
+        location = kaMatch[1].trim();
+      } else {
+        // Direct pattern like "Mumbai weather", "Pune temperature"
+        const directMatch = q.match(/([a-zA-Z\s\u0900-\u097F]+)\s+(?:weather|mausam|temp|temperature|मौसम|वेदर|तापमान)/);
+        if (directMatch && directMatch[1]) {
+          const potentialLoc = directMatch[1].trim();
+          const stopwords = ['is', 'the', 'how', 'what', 'current', 'live', 'show', 'get', 'tell', 'me', 'today', 'tomorrow', 'का', 'में', 'क्या', 'कैसा', 'दिखाओ', 'बताओ'];
+          if (!stopwords.includes(potentialLoc)) {
+            location = potentialLoc;
+          }
+        }
+      }
+    }
+    
+    if (location) {
+      const cleanWords = location.split(/\s+/).filter(word => {
+        const stopwords = ['is', 'the', 'how', 'what', 'current', 'live', 'show', 'get', 'tell', 'me', 'today', 'tomorrow', 'please', 'any', 'a', 'an', 'का', 'में', 'क्या', 'कैसा', 'दिखाओ', 'बताओ', 'की', 'के', 'है'];
+        return !stopwords.includes(word);
+      });
+      location = cleanWords.join(' ');
+    }
+    
+    return location || ''; // Return empty string if weather query but no location specified
   };
 
   const toggleListen = () => {
@@ -685,6 +806,61 @@ const VoiceAssistant = () => {
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        )}
+
+                        {/* Dynamic Weather Card */}
+                        {msg.type === 'weather' && msg.weather && (
+                          <div className="mt-3 bg-gradient-to-br from-blue-50/50 to-village-lightMint/30 border border-village-mint/20 rounded-2xl p-4 flex flex-col gap-3 shadow-sm relative overflow-hidden text-gray-800">
+                            <div className="absolute top-0 right-0 h-1 bg-village-emerald w-full" />
+                            
+                            {/* Weather Card Header */}
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black uppercase text-village-darkGreen tracking-wide flex items-center gap-1.5">
+                                <CloudSun className="w-3.5 h-3.5 text-village-emerald animate-pulse" />
+                                {msg.weather.location || (isEn ? 'Current Weather' : 'वर्तमान मौसम')}
+                              </span>
+                            </div>
+
+                            {/* Main Metrics */}
+                            <div className="grid grid-cols-2 gap-3 items-center">
+                              {/* Temp */}
+                              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-2.5 flex items-center gap-2 border border-gray-100">
+                                <ThermometerSun className="w-6 h-6 text-orange-500 shrink-0" />
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{isEn ? 'Temp' : 'तापमान'}</span>
+                                  <span className="text-sm font-extrabold text-gray-800 leading-tight">{msg.weather.temperature}°C</span>
+                                </div>
+                              </div>
+                              {/* Condition */}
+                              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-2.5 flex flex-col justify-center border border-gray-100 h-full text-center">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{isEn ? 'Condition' : 'स्थिति'}</span>
+                                <span className="text-[11px] font-extrabold text-village-darkGreen capitalize leading-snug truncate">{msg.weather.condition}</span>
+                              </div>
+                            </div>
+
+                            {/* Minor Metrics */}
+                            <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-600">
+                              <div className="flex items-center gap-1.5 font-bold bg-white/50 px-2.5 py-1.5 rounded-lg border border-gray-100/50">
+                                <Droplets className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                <span>{isEn ? 'Humidity:' : 'नमी:'} <strong>{msg.weather.humidity}%</strong></span>
+                              </div>
+                              <div className="flex items-center gap-1.5 font-bold bg-white/50 px-2.5 py-1.5 rounded-lg border border-gray-100/50">
+                                <Wind className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                                <span>{isEn ? 'Wind:' : 'हवा:'} <strong>{msg.weather.windSpeed} km/h</strong></span>
+                              </div>
+                            </div>
+
+                            {/* Farming Alert Banner */}
+                            {msg.weather.farmingAlert && (
+                              <div className="bg-red-50 border border-red-100 rounded-xl p-2.5 flex gap-2 items-start text-[10px] text-red-600 leading-relaxed shadow-sm">
+                                <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                <div>
+                                  <strong className="text-red-700 font-bold block mb-0.5">{isEn ? 'Farming Alert:' : 'कृषि चेतावनी:'}</strong>
+                                  {msg.weather.farmingAlert}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

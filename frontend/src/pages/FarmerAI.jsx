@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { Sprout, CloudSun, Droplets, Wind, ThermometerSun, Bot, Send, AlertTriangle, Leaf, FlaskConical, Loader, AlertCircle } from 'lucide-react';
+import { Sprout, CloudSun, Droplets, Wind, ThermometerSun, Bot, Send, AlertTriangle, Leaf, FlaskConical, Loader, AlertCircle, MapPin, RefreshCw } from 'lucide-react';
 import { CONFIG } from '../utils/constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -699,6 +699,9 @@ const FarmerAI = () => {
     }
   ] : [];
 
+  const [searchLocation, setSearchLocation] = useState('');
+  const [isSearched, setIsSearched] = useState(false);
+
   const fetchWeather = async () => {
     setLoadingWeather(true);
     try {
@@ -718,6 +721,29 @@ const FarmerAI = () => {
     } finally {
       setLoadingWeather(false);
     }
+  };
+
+  const handleSearchWeather = async (e) => {
+    e.preventDefault();
+    if (!searchLocation.trim()) return;
+    
+    setLoadingWeather(true);
+    try {
+      const res = await axios.get(`${CONFIG.API_BASE_URL}/api/farmer/weather?village=${encodeURIComponent(searchLocation.trim())}`);
+      setWeatherData(res.data);
+      setIsSearched(true);
+    } catch (error) {
+      console.error("Search weather error", error);
+      alert(locale === 'en' ? "Failed to find weather for this location." : "इस स्थान के लिए मौसम की जानकारी नहीं मिली।");
+    } finally {
+      setLoadingWeather(false);
+    }
+  };
+
+  const handleResetWeather = () => {
+    setSearchLocation('');
+    setIsSearched(false);
+    fetchWeather();
   };
 
   const handleGetRecommendations = async (e) => {
@@ -856,11 +882,44 @@ const FarmerAI = () => {
                 <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <CloudSun className="text-village-emerald w-6 h-6" /> {t('farmer.weather')}
                 </h2>
+
+                {/* Weather Search Form */}
+                <form onSubmit={handleSearchWeather} className="flex gap-2 mb-6">
+                  <div className="relative flex-1">
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      value={searchLocation}
+                      onChange={(e) => setSearchLocation(e.target.value)}
+                      placeholder={locale === 'en' ? "Search city or village..." : "शहर या गाँव खोजें..."}
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-village-mint focus:bg-white text-xs text-gray-800 font-bold transition-all"
+                    />
+                  </div>
+                  <button type="submit" className="px-5 py-2.5 bg-village-emerald hover:bg-village-darkGreen text-white text-xs font-black rounded-2xl transition-colors shadow-sm whitespace-nowrap">
+                    {locale === 'en' ? 'Search' : 'खोजें'}
+                  </button>
+                  {isSearched && (
+                    <button
+                      type="button"
+                      onClick={handleResetWeather}
+                      className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-2xl transition-colors flex items-center justify-center"
+                      title={locale === 'en' ? "Reset to My Location" : "मेरा स्थान रीसेट करें"}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  )}
+                </form>
                 
                 {loadingWeather ? (
                   <div className="flex justify-center p-6"><Loader className="animate-spin text-village-mint w-8 h-8" /></div>
                 ) : (
                   <>
+                    {/* Location Indicator */}
+                    <div className="text-xs font-bold text-village-darkGreen bg-village-lightMint/50 border border-village-mint/30 px-3 py-1.5 rounded-xl w-fit mb-4 flex items-center gap-1.5 shadow-sm">
+                      <MapPin className="w-3.5 h-3.5 text-village-emerald animate-pulse" />
+                      <span>{locale === 'en' ? 'Location:' : 'स्थान:'} <strong>{weatherData?.location || (locale === 'en' ? 'Default' : 'डिफ़ॉल्ट')}</strong></span>
+                    </div>
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div className="bg-orange-50 p-4 rounded-2xl flex flex-col items-center justify-center">
                         <ThermometerSun className="w-8 h-8 text-orange-500 mb-2" />
