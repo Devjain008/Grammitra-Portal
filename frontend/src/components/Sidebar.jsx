@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 import { 
   LayoutDashboard, Briefcase, ShoppingBag, Wrench, 
   Sprout, Landmark, HeartPulse, GraduationCap, 
@@ -60,7 +61,7 @@ const Sidebar = () => {
       {/* ── Desktop Sidebar ── */}
       <aside className="w-64 h-screen hidden md:flex flex-col glass-card-dark fixed left-0 top-0 m-4 rounded-3xl overflow-hidden z-50">
         <div className="p-6 flex items-center gap-3 border-b border-white/10">
-          <Sprout className="w-8 h-8 text-village-mint" />
+          <img src={logo} alt="GramMitra Logo" className="w-8 h-8 rounded-xl object-cover" />
           <h2 className="text-xl font-bold text-white tracking-wide">GramMitra</h2>
         </div>
 
@@ -148,7 +149,7 @@ const Sidebar = () => {
               {/* Handle */}
               <div className="flex items-center justify-between px-6 pt-4 pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
-                  <Sprout className="w-6 h-6 text-village-mint" />
+                  <img src={logo} alt="GramMitra Logo" className="w-6 h-6 rounded-lg object-cover" />
                   <h3 className="text-lg font-bold text-white">GramMitra</h3>
                 </div>
                 <button

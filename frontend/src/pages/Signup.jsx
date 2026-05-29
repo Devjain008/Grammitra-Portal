@@ -5,6 +5,7 @@ import { User, Phone, Mail, Lock, MapPin, ChevronDown, Camera } from 'lucide-rea
 import { USER_CATEGORIES, CONFIG } from '../utils/constants';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import logo from '../assets/logo.png';
 
 const Signup = () => {
   const { t, locale } = useLanguage();
@@ -105,9 +106,7 @@ const Signup = () => {
       </div>
       <div className="bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] rounded-[32px] w-full max-w-[900px] p-10 flex flex-col items-center">
         {/* Logo */}
-        <div className="w-14 h-14 bg-[#48b475] rounded-full flex items-center justify-center text-white text-2xl font-bold font-sans shadow-sm select-none">
-          ग्रा
-        </div>
+        <img src={logo} alt="GramMitra Logo" className="w-14 h-14 rounded-2xl object-cover shadow-sm border border-gray-100" />
         
         {/* Title & Subtitle */}
         <h2 className="text-2xl font-black text-gray-800 mt-4">{t('auth.signup') || 'Sign Up'}</h2>

@@ -6,6 +6,7 @@ import { CONFIG } from '../utils/constants';
 import { Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import logo from '../assets/logo.png';
 
 const Login = () => {
   const { t, locale } = useLanguage();
@@ -48,9 +49,7 @@ const Login = () => {
       <div className="bg-white w-full max-w-[420px] rounded-[32px] p-8 md:p-10 shadow-[0_12px_40px_rgba(0,0,0,0.03)] flex flex-col items-center">
         
         {/* Circular Badge Logo */}
-        <div className="w-14 h-14 bg-village-emerald rounded-full flex items-center justify-center mb-4 shadow-sm">
-          <span className="text-2xl text-white font-bold select-none">ग्रा</span>
-        </div>
+        <img src={logo} alt="GramMitra Logo" className="w-14 h-14 rounded-2xl object-cover mb-4 shadow-sm border border-gray-100" />
 
         {/* Header Title */}
         <h2 className="text-2xl font-bold text-gray-800 tracking-tight text-center">{t('common.appName') || 'GramMitra AI'}</h2>
