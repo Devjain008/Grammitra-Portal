@@ -451,6 +451,12 @@ const Teachers = () => {
                   {/* Subject Badges */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {user?.role !== 'admin' && teacher._dist && <DistanceBadge info={teacher._dist} isEn={isEn} />}
+                    {(teacher.village || teacher.district) && (
+                      <span className="bg-gray-50 text-gray-600 text-[10px] font-extrabold px-2 py-0.5 rounded-lg border border-gray-150 inline-flex items-center gap-1 shadow-sm">
+                        <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                        {teacher.village || teacher.district}
+                      </span>
+                    )}
                     {teacher.teacherSubject && teacher.teacherSubject.split(',').map((subj, sIdx) => (
                       <span 
                         key={sIdx} 

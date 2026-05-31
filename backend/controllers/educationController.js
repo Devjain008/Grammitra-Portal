@@ -116,7 +116,7 @@ export const getVillageTeachers = async (req, res) => {
     
     // Find all teachers in the village
     const teachers = await User.find({ village: villageName, categories: 'teacher' })
-      .select('fullName email mobile profileImage teacherSubject teacherQualifications teacherContact teacherExperience bio gender rating totalRatings teacherReviews');
+      .select('fullName email mobile profileImage teacherSubject teacherQualifications teacherContact teacherExperience bio gender rating totalRatings teacherReviews location village district state');
     
     // Fetch batches for these teachers
     const teacherIds = teachers.map(t => t._id);
